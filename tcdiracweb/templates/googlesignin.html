@@ -1,0 +1,52 @@
+{% extends "layout.html" %}
+{% block title %} Sign in with Google {% endblock %}
+{% block content %}
+<meta name="google-signin-clientid" 
+    content="580557226207-ukigt720g3834henmlj546ucld47elnk.apps.googleusercontent.com" />
+<meta name="google-signin-scope" content="profile" />
+<meta name="google-signin-cookiepolicy" content="single_host_origin" />
+<meta name="google-signin-callback" content="oauth2callback" />
+<script type="text/javascript">
+  (function() {
+   var po = document.createElement('script'); po.type = 'text/javascript'; po.async = true;
+   po.src = 'https://apis.google.com/js/client:plusone.js';
+   var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+ })();
+</script>
+<script type="text/javascript">
+function oauth2callback(authResult) {
+  if (authResult['status']['signed_in']) {
+    // Update the app to reflect a signed in user
+    // Hide the sign-in button now that the user is authorized, for example:
+    document.getElementById('gSignInWrapper').setAttribute('style', 'display: none');
+  } else {
+    // Update the app to reflect a signed out user
+    // Possible error values:
+    //   "user_signed_out" - User is signed-out
+    //   "access_denied" - User denied access to your app
+    //   "immediate_failed" - Could not automatically log in the user
+    console.log('Sign-in state: ' + authResult['error']);
+  }
+}
+</script>
+<!-- In the callback, you would hide the gSignInWrapper element on a
+successful sign in -->
+<div id="gSignInWrapper">
+  <div id="myButton" class="classesToStyleWith">
+    Sign in with Google
+  </div>
+</div>
+<script type="text/javascript">
+/* Executed when the APIs finish loading */
+/*
+function render() {
+
+  // Additional params
+  var additionalParams = {
+    'theme' : 'dark'
+  };
+
+  gapi.signin.render('myButton', additionalParams);
+}*/
+</script>
+{% endblock %}

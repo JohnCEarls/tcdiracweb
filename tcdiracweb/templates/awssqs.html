@@ -1,0 +1,54 @@
+{%extends 'layout.html' %}
+{% block title %} AWS SQS {% endblock %}
+{% block content %}
+    <div id="in-queue" data-url=""></div>
+    <div id="out-queue" data-url=""></div>
+    <script type="text/javascript">
+
+        function sqs_create_cb( err, data ){
+            if (err == null){
+                console.log('Created queue');
+                console.log(data);
+                var in_pat = /-in/;
+                if (in_pat.test( data.QueueUrl )){
+                    $("div#in-queue").data("url", data.QueueUrl);
+                    var queuename = data.QueueUrl.replace(/^.*[\\\/]/, '')
+                     $("div#in-queue").text( queuename );
+                } else {
+                    $("div#out-queue").data("url", data.QueueUrl);
+                    var queuename = data.QueueUrl.replace(/^.*[\\\/]/, '')
+                    $("div#out-queue").text( queuename );
+                }
+            } else {
+                console.log( err);
+                console.log( "Create queue failed" );
+            }
+        }
+
+
+        AWS.config.credentials = new AWS.WebIdentityCredentials({
+                RoleArn: "arn:aws:iam::315557446885:role/tcdiracwebRoleGoogle",
+            }); 
+        AWS.config.region = 'us-east-1';
+        AWS.config.credentials.params.WebIdentityToken = "{{session['id_token']}}"
+        s3 = new AWS.S3;
+
+        s3.listObjects({Bucket: 'ndp-hdproject-csvs'}, function(error, data) {
+        if (error) {
+            console.log(error); // an error occurred
+        } else {
+            console.log(data); // request succeeded
+        }
+        });
+        
+        var sqs = new AWS.SQS();
+        sqs.createQueue({"QueueName":"tcdirac-web-out"},function(err,data){
+            sqs_create_cb( err, data);
+         });
+        var sqs = new AWS.SQS();
+        sqs.createQueue({"QueueName":"tcdirac-web-in"},function(err,data){
+            sqs_create_cb( err, data);
+         });
+    </script>
+
+{% endblock %}

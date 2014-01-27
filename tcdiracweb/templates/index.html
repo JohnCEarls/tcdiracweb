@@ -1,0 +1,18 @@
+{% extends "layout.html" %}
+{% block title %} Welcome {% endblock %}
+{% block content %}
+    <H1>Init</H1>
+    <p>lorem ipsem</p>
+    <div class="nav" id="login">
+    {% if not session or  not session.google_token %}
+    <a href="{{ url_for('login') }}">Login with Google</a>
+    {% elif not session.user_data.registered %}
+    <a href="{{ url_for('register') }}">Register</a>
+    {%elif session.user_data.active %}
+        <a href="{{ url_for('awssqs')  }}">SQS</a>
+    {%endif%}
+    {%if session and session.google_token%}
+    <a href="{{ url_for('logout') }}">Logout</a>
+    {%endif%}
+    </div>
+{% endblock %}H
