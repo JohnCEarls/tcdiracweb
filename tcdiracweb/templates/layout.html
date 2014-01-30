@@ -2,31 +2,48 @@
 <html>
     <head>
         {% block head %}{% endblock %} 
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <!-- Bootstrap -->
+        <link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet"/>
         <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+        <link rel="stylesheet" href="{{ url_for('static', filename='tipsy.css')}}" />
         <title>{% block title %}{% endblock %} - time-course Dirac</title>
         <script type="text/javascript">
             $SCRIPT_ROOT = {{ request.script_root|tojson|safe }};
         </script>
         <script type="text/javascript" src="{{ 
+            url_for('static', filename='sprintf.js') }}"></script>
+        <script type="text/javascript" src="{{ 
             url_for('static', filename='jquery-2.1.0.js') }}"></script>
         <script type="text/javascript" src="{{ url_for('static', filename='aws-sdk-2.0.0-rc8.js') }}">
         </script>
+        <script type="text/javascript" src="{{ url_for('static', filename="jquery.tipsy.js") }}">
+        </script>
+        <script type="text/javascript" src="{{ url_for('static', filename='js/bootstrap.min.js') }}"></script>
     </head>
     <body>
         <script type="text/javascript" src="{{ 
             url_for('static', filename='d3.v3.js') }}"></script>
         {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
-        <div id="messages">
-            <ul class="flashes">
                 {% for category, message in messages %}
-                <li class="{{category}}">{{message}}</li>
+                {% if category == 'error' %}
+
+                <div class="alert alert-error alert-dismissable">
+                      <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+                      <strong>{{category}}</strong> {{ message }}
+                </div>
+                {% else %}
+                <div class="alert alert-warning alert-dismissable">
+                      <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+                      <strong>{{category}}</strong> {{ message }}
+                </div>
+                {% endif %}
                 {% endfor %}
-            </ul>
         </div>
         {% endif %}
         {% endwith %}
-        <div id="content">{% block content %}{% endblock %} </div>
+        <div id="content" class="container">{% block content %}{% endblock %} </div>
         <div id="footer">{% block footer %}&copy; Copyright 2014 by John C Earls{% endblock %} </div>
     </body>
 </html>

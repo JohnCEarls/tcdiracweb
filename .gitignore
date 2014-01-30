@@ -1,0 +1,7 @@
+*.swp
+build/
+dist/
+*.tsv
+*.csv
+tcdiracweb.egg-info
+tcdiracweb/static/data/*

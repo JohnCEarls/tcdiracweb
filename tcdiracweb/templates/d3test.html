@@ -1,0 +1,168 @@
+{% extends "layout.html" %}
+{% block title %}D3 test{% endblock %}
+{% block content %}
+    <H1>Init</H1>
+    <p>lorem ipsem</p>
+    <div class="nav" id="login">
+    {% if not session or  not session.google_token %}
+    <a href="{{ url_for('login') }}">Login with Google</a>
+    {% elif not session.user_data.registered %}
+    <a href="{{ url_for('register') }}">Register</a>
+    {%elif session.user_data.active %}
+        <a href="{{ url_for('awssqs')  }}">SQS</a>
+    {%endif%}
+    {%if session and session.google_token%}
+    <a href="{{ url_for('logout') }}">Logout</a>
+    {%endif%}
+</div>
+    <style>
+        div.drawing{
+            background-color: #646CFF;
+       }
+       div.bar{
+           display: inline-block;
+           width: 20px;
+           height: 75px;
+           background-color: teal;
+           margin-right:2px;
+           
+       }
+       .axis path,
+       .axis line {
+           fill: none;
+           stroke: black;
+           shape-rendering: crispEdges;
+       }
+       .axis text{
+           font-family: sans-serif;
+           font-size: 11px;
+       }
+    </style>
+    <script type="text/javascript">
+        var dataset = [];
+dataset.sort( function(a,b){ return a-b; });
+            var w = "1000";
+            var h = "800";
+            var slope = Math.random() * 2 * (Math.random()< 0.5 ? 1 : -1);
+            for (var i=0; i< 50; i++){
+                var x = Math.random()  * (Math.random()< 0.5 ? 1 : -1) ;
+                var y = (x*x) + slope*x + (Math.random() * .2);
+                dataset.push( [ x, y ] );
+            }
+//dataset = [100,200,300,400,500];
+            var padding = 30;
+            var min_x = d3.min(dataset, function(d){return d[0];});
+            var max_x = d3.max(dataset, function(d){return d[0];});
+            var min_y = d3.min(dataset, function(d){return d[1];});
+            var max_y = d3.max(dataset, function(d){return d[1];});
+            var scale =  { "x" : d3.scale.linear()
+                    .domain([min_x, max_x] )
+                        .range( [padding, w - (padding * 2)] ).nice(),
+                   "y" : d3.scale.linear()
+                    .domain([min_y, max_y] )
+                        .range( [h-padding, padding] ).nice()
+                };
+
+            
+            var colorscale =  { "x" : d3.scale.linear()
+                    .domain([min_x, max_x] )
+                        .range( [0, 255] ),
+                   "y" : d3.scale.linear()
+                    .domain([min_y, max_y] )
+                        .range( [0, 255] )
+                };
+            var svg = d3.select("body")
+            .append("svg")
+            .attr("height", h)
+            .attr("width", w)
+            svg.selectAll("circle")
+                .data(dataset)
+                .enter()
+                .append("circle")
+                .attr("cx", function(d){ return scale.x(d[0]);})
+                .attr("cy", function(d){ return scale.y(d[1]);})
+                .attr("r",4 )
+                .attr("fill", function(d){ return "rgb(" +Math.round(colorscale.x(d[0]))+"," + Math.round(255 - colorscale.y(d[1])) + ",10)"; } );
+            /*
+            svg.selectAll("text")
+                .data(dataset)
+                .enter()
+                .append("text")
+                .text( function(d){ return vsprintf('(%.2f, %.2f)', d);   } )
+                .attr("x", function(d){ return scale.x(d[0]);})
+                .attr("y", function(d){ return scale.y(d[1]);})
+                .attr("font-size", "8px");
+            */
+
+            var xaxis = d3.svg.axis();
+            xaxis.scale( scale.x )
+                 .orient("bottom")
+                .ticks(5);
+            svg.append("g")
+                .attr("class","axis")
+                .attr("transform", sprintf("translate(0,%d)", (h - padding)))
+                .call(xaxis);
+            var yaxis = d3.svg.axis();
+            yaxis.scale( scale.y )
+                 .orient("left")
+                .ticks(5);
+            svg.append("g")
+                .attr("class","axis")
+                .attr("transform", sprintf("translate(%d, 0)", (padding)))
+                .call(yaxis);
+            $('svg circle').tipsy( 
+                    {gravity:'s', 
+                    delayOut:1000, 
+                    html:true, 
+                    title: function(){ 
+                        var d = this.__data__; 
+                        return vsprintf('%.2f, %.2f', d); 
+                        }
+                    });
+            /**
+            svg.selectAll("rect")
+                .data(dataset)
+                .enter()
+                .append("rect")
+                .attr("x", function( d, i){
+                            return i * (w/dataset.length);
+                })
+                .attr("width", w/dataset.length - 1)
+                .attr("height", function( d){
+                            return d * 4;
+                            })
+                .attr("y", function( d ){
+                        return h - d*4;
+                        })
+                .attr("fill", function( d ){
+                        return "rgb(0,0," + Math.floor(d*10) + ")";
+                        });
+
+            svg.selectAll("text")
+                .data(dataset)
+                .enter()
+                .append("text")
+                .text( function(d){
+                        return Math.round(d);
+                        })
+                .attr( "x", function( d, i){
+                            return i * (w/dataset.length) +  (w/dataset.length)/2 - 3 ;
+                })
+                .attr("y", function( d ){
+                        return h - d*4 + 15;
+                        })
+                .attr("fill", "white")
+                .attr("text-anchor", "middle")
+                .attr("font-size", "11px");
+
+    .selectAll("div")
+    .data(dataset)
+    .enter()
+    .append("div")
+    .attr("class", "bar")
+    .style("height", function(d){ 
+            return d+"px"; }
+         );**/
+
+    </script>
+{% endblock %}

@@ -1,0 +1,170 @@
+{% extends "layout.html" %}
+{% block title %} Bivariate time series comparison {% endblock %}
+{% block content %}
+    <style>
+        .axis path,
+        .axis line {
+          fill: none;
+          stroke: #000;
+          shape-rendering: crispEdges;
+        }
+
+        .x.axis path {
+          display: none;
+        }
+
+        .area.above {
+          fill: rgb(252,141,89);
+        }
+
+        .area.below {
+          fill: rgb(145,207,96);
+        }
+
+        .line {
+          fill: none;
+          stroke: #000;
+          stroke-width: 1.5px;
+        }
+     
+    </style>
+    <script>
+
+function trial(header){
+var tstring =  header.gene + ": <small>Comparing " + header.type + " between " + header.base + "(black line) and " + header.comp + "</small>";
+$('#expression-title').html( tstring );
+var margin = {top: 20, right: 20, bottom: 30, left: 50},
+    width = 960 - margin.left - margin.right,
+    height = 500 - margin.top - margin.bottom;
+
+
+var x = d3.scale.linear()
+    .range([0, width]);
+
+var y = d3.scale.linear()
+    .range([height, 0]);
+
+var xAxis = d3.svg.axis()
+    .scale(x)
+    .orient("bottom");
+
+var yAxis = d3.svg.axis()
+    .scale(y)
+    .orient("left");
+
+var line = d3.svg.area()
+    .interpolate("basis")
+    .x(function(d) { return x(d[header.age]); })
+    .y(function(d) { return y(d[header.base]); });
+
+var area = d3.svg.area()
+    .interpolate("basis")
+    .x(function(d) { return x(d[header.age]); })
+    .y1(function(d) { return y(d[header.base]); });
+
+//var svg = d3.select("body").append("svg")
+var svg = d3.select("div#svg-holder").append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+  .append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+d3.tsv(header.filename, function(error, data) {
+    if(error){
+        console.log(error);
+    }
+  data.forEach(function(d) {
+    d.age = +d[header.age];
+    d[header.base]= +d[header.base];
+    d[header.comp] = +d[header.comp];
+  });
+
+  x.domain(d3.extent(data, function(d) { return d.age; }));
+
+  y.domain([
+    d3.min(data, function(d) { return Math.min(d[header.base], d[header.comp]); }),
+    d3.max(data, function(d) { return Math.max(d[header.base], d[header.comp]); })
+  ]);
+
+  svg.datum(data);
+
+  svg.append("clipPath")
+      .attr("id", "clip-below")
+    .append("path")
+      .attr("d", area.y0(height));
+
+  svg.append("clipPath")
+      .attr("id", "clip-above")
+    .append("path")
+      .attr("d", area.y0(0));
+
+  svg.append("path")
+      .attr("class", "area above")
+      .attr("clip-path", "url(#clip-above)")
+      .attr("d", area.y0(function(d) { return y(d[header.comp]); }));
+
+  svg.append("path")
+      .attr("class", "area below")
+      .attr("clip-path", "url(#clip-below)")
+      .attr("d", area);
+
+  svg.append("path")
+      .attr("class", "line")
+      .attr("d", line);
+
+  svg.append("g")
+      .attr("class", "x axis")
+      .attr("transform", "translate(0," + height + ")")
+      .call(xAxis);
+
+  svg.append("g")
+      .attr("class", "y axis")
+      .call(yAxis)
+    .append("text")
+      .attr("transform", "rotate(-90)")
+      .attr("y", 6)
+      .attr("dy", ".71em")
+      .style("text-anchor", "end");
+    });    
+    }
+    //trial(header);
+    function gene_button( hdr, index, array){
+        d = document.createElement('div');
+        $(d).addClass('btn btn-default')
+            .html(hdr.gene)
+            .attr('data-info', hdr)
+            .attr('id', hdr.gene)
+            .appendTo( $('div#gene-choosers') )
+            .click( function(){
+                $('svg').remove();
+                trial(hdr);
+            });
+    }
+    
+    </script>
+    <div class="row">
+    <div class="col-md-12 page-header">
+        <h1>Comparison of expression <small>Gene by gene</small> </h1>
+    </div>
+    </div>
+    <div class="row"> 
+
+    <div class="btn-group-vertical col-md-2" id="gene-choosers">
+    </div>
+
+    <div class="panel panel-default col-md-10">
+   <div class="panel-heading">
+    <h3 class="panel-title" id="expression-title"></h3>
+  </div> 
+  <div class="panel-body" id="svg-holder">
+    </div>
+    </div>
+    </div>
+    <script>
+    temp = '';
+    $.getJSON('{{url_for('static', filename='data/HISTONE_MODIFICATION_descriptions.json') }}', function( headers ){
+        headers.forEach( gene_button ); 
+        temp = headers;
+    });
+    </script>
+
+{% endblock %}

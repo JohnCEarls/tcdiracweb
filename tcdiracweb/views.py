@@ -95,8 +95,9 @@ def register():
     else:
         flash("You need to be logged in before you register")
         return redirect(url_for('logout'))
-
-
+@app.route('/d3test')
+def d3test():
+    return render_template('differencechart.html')
 
 def check_id():
     if 'user_data' in session and 'id' in session['user_data']:
@@ -105,3 +106,5 @@ def check_id():
         app.logger.debug(   session['user_data']['id'] )
         return u_man.hash_id( me.data['id'] ) == session['user_data']['id']
     return False
+
+

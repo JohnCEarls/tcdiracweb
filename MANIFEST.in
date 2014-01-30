@@ -1,0 +1,2 @@
+recursive-include tcdiracweb/templates *
+recursive-include tcdiracweb/static *

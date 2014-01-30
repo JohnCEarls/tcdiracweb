@@ -5,14 +5,14 @@
     <p>lorem ipsem</p>
     <div class="nav" id="login">
     {% if not session or  not session.google_token %}
-    <a href="{{ url_for('login') }}">Login with Google</a>
+    <a class="btn btn-danger btn-large" href="{{ url_for('login') }}"><i class="icon-white icon-plus-sign"></i>Login with Google</a>
     {% elif not session.user_data.registered %}
-    <a href="{{ url_for('register') }}">Register</a>
+    <a class="btn btn-danger btn-large" href="{{ url_for('register') }}">Register</a>
     {%elif session.user_data.active %}
-        <a href="{{ url_for('awssqs')  }}">SQS</a>
+        <a class="btn btn-success btn-large" href="{{ url_for('awssqs')  }}">SQS</a>
     {%endif%}
     {%if session and session.google_token%}
-    <a href="{{ url_for('logout') }}">Logout</a>
+    <a  class="btn btn-danger btn-large"  href="{{ url_for('logout') }}">Logout</a>
     {%endif%}
     </div>
-{% endblock %}H
+{% endblock %}
