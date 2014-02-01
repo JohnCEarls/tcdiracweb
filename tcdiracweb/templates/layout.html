@@ -1,13 +1,26 @@
 <!doctype html>
 <html>
     <head>
+        <title>{% block title %}{% endblock %} - time-course Dirac</title>
         {% block head %}{% endblock %} 
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <!-- Bootstrap -->
-        <link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet"/>
+        <link rel="shortcut icon" href="{{ 
+            url_for('static', filename='images/purpleheart.ico')}}">
+        <link href="{{ url_for('static', 
+            filename='css/bootstrap.min.css') }}" rel="stylesheet"/>
+        <style>
+        /* Custom page footer */
+            .footer {
+                padding-top: 19px;
+                color: #777;
+                border-top: 1px solid #e5e5e5;
+                text-align: right;
+            }
+
+        </style>
         <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
         <link rel="stylesheet" href="{{ url_for('static', filename='tipsy.css')}}" />
-        <title>{% block title %}{% endblock %} - time-course Dirac</title>
         <script type="text/javascript">
             $SCRIPT_ROOT = {{ request.script_root|tojson|safe }};
         </script>
@@ -15,15 +28,18 @@
             url_for('static', filename='sprintf.js') }}"></script>
         <script type="text/javascript" src="{{ 
             url_for('static', filename='jquery-2.1.0.js') }}"></script>
-        <script type="text/javascript" src="{{ url_for('static', filename='aws-sdk-2.0.0-rc8.js') }}">
+        <script type="text/javascript" src="{{ 
+            url_for('static', filename='aws-sdk-2.0.0-rc8.js') }}">
         </script>
-        <script type="text/javascript" src="{{ url_for('static', filename="jquery.tipsy.js") }}">
+        <script type="text/javascript" src="{{ 
+                url_for('static', filename="jquery.tipsy.js") }}">
         </script>
-        <script type="text/javascript" src="{{ url_for('static', filename='js/bootstrap.min.js') }}"></script>
-    </head>
-    <body>
+        <script type="text/javascript" src="{{ 
+            url_for('static', filename='js/bootstrap.min.js') }}"></script>
         <script type="text/javascript" src="{{ 
             url_for('static', filename='d3.v3.js') }}"></script>
+    </head>
+    <body>
         {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
                 {% for category, message in messages %}
@@ -43,7 +59,8 @@
         </div>
         {% endif %}
         {% endwith %}
-        <div id="content" class="container">{% block content %}{% endblock %} </div>
-        <div id="footer">{% block footer %}&copy; Copyright 2014 by John C Earls{% endblock %} </div>
+        <div id="content" class="container">{% block content %}{% endblock %}
+        <div id="footer" class="footer">{% block footer %}&copy; Copyright 2014 by John C Earls{% endblock %} </div>
+         </div>
     </body>
 </html>

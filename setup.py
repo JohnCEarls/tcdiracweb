@@ -30,7 +30,7 @@ if sys.version_info < (2, 7):
     sys.exit(1)
 
 from setuptools import setup, find_packages
-extra = dict(install_requires=["boto>=2.9.9"],              
+extra = dict(install_requires=["boto>=2.9.9", "datadirac"],              
              zip_safe=False)
 VERSION = '0.0.0'
 static = os.path.join('tcdiracweb','utils','static.py')

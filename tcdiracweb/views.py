@@ -95,6 +95,35 @@ def register():
     else:
         flash("You need to be logged in before you register")
         return redirect(url_for('logout'))
+
+
+
+
+@app.route('/biv/<net_source_id>/<source_dataframe>/<metadata_file>/<pathway_id>/<restype>')
+@app.route('/biv/<net_table>/<net_source_id>/<source_dataframe>/<metadata_file>/<pathway_id>/<restype>')
+def get_bivariate( pathway_id, net_source_id, source_dataframe, 
+        metadata_file, restype = 'expression',
+        net_table=app.config['DEFAULT_NET_TABLE'] ):
+    import json
+    import tcdiracweb.utils.maketsv as tsv
+    import os.path
+    app.logger.warning( '/'.join([pathway_id, net_source_id, source_dataframe, 
+        metadata_file, restype, net_table]))
+    app_path = os.path.dirname(__file__)
+    source_bucket = app.config['SOURCE_DATA_BUCKET']
+    data_path =  url_for('static', filename='data')
+    t = tsv.TSVGen( net_table, net_source_id, source_dataframe, metadata_file, app_path, source_bucket, data_path)
+    try:
+        return t.gen_bivariate( pathway_id, by_rank=True )
+    except Exception as e:
+        app.logger.error( str(e) )
+        return json.dumps({'error': str(e)})
+
+@app.route('/comparegenes/<pathway_id>')
+def genedifference( pathway_id ):
+    return render_template('differencechart.html', pathway_id=pathway_id)
+
+
 @app.route('/d3test')
 def d3test():
     return render_template('differencechart.html')

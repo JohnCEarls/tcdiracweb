@@ -2,169 +2,185 @@
 {% block title %} Bivariate time series comparison {% endblock %}
 {% block content %}
     <style>
-        .axis path,
-        .axis line {
-          fill: none;
-          stroke: #000;
-          shape-rendering: crispEdges;
-        }
-
-        .x.axis path {
-          display: none;
-        }
-
-        .area.above {
-          fill: rgb(252,141,89);
-        }
-
-        .area.below {
-          fill: rgb(145,207,96);
-        }
-
-        .line {
-          fill: none;
-          stroke: #000;
-          stroke-width: 1.5px;
-        }
-     
+        .navbar-header {
+            min-width:100px;
+        } 
     </style>
+        <script type="text/javascript" src="{{ 
+            url_for('static', filename='js/d3.comparisongraph.js') }}"></script>
+        <script type="text/javascript" src="{{
+            url_for('static', filename='js/gene_info.js') }}"></script>
     <script>
-
-function trial(header){
-var tstring =  header.gene + ": <small>Comparing " + header.type + " between " + header.base + "(black line) and " + header.comp + "</small>";
-$('#expression-title').html( tstring );
-var margin = {top: 20, right: 20, bottom: 30, left: 50},
-    width = 960 - margin.left - margin.right,
-    height = 500 - margin.top - margin.bottom;
-
-
-var x = d3.scale.linear()
-    .range([0, width]);
-
-var y = d3.scale.linear()
-    .range([height, 0]);
-
-var xAxis = d3.svg.axis()
-    .scale(x)
-    .orient("bottom");
-
-var yAxis = d3.svg.axis()
-    .scale(y)
-    .orient("left");
-
-var line = d3.svg.area()
-    .interpolate("basis")
-    .x(function(d) { return x(d[header.age]); })
-    .y(function(d) { return y(d[header.base]); });
-
-var area = d3.svg.area()
-    .interpolate("basis")
-    .x(function(d) { return x(d[header.age]); })
-    .y1(function(d) { return y(d[header.base]); });
-
-//var svg = d3.select("body").append("svg")
-var svg = d3.select("div#svg-holder").append("svg")
-    .attr("width", width + margin.left + margin.right)
-    .attr("height", height + margin.top + margin.bottom)
-  .append("g")
-    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-d3.tsv(header.filename, function(error, data) {
-    if(error){
-        console.log(error);
+    var current_gene_element = 0;
+    var use_rank_view = true;
+    var interpolation = '';
+    function addSave(){
+        var html = d3.select("svg")
+            .attr("title", "test2")
+            .attr("version", 1.1)
+            .attr("xmlns", "http://www.w3.org/2000/svg")
+            .node().parentNode.innerHTML;
+        d3.select("body").append("div")
+            .attr("id", "download")
+            .html("Right-click on this preview and choose Save as<br />Left-Click to dismiss<br />")
+            .append("img")
+            .attr("src", "data:image/svg+xml;base64,"+ btoa(html));
     }
-  data.forEach(function(d) {
-    d.age = +d[header.age];
-    d[header.base]= +d[header.base];
-    d[header.comp] = +d[header.comp];
-  });
 
-  x.domain(d3.extent(data, function(d) { return d.age; }));
-
-  y.domain([
-    d3.min(data, function(d) { return Math.min(d[header.base], d[header.comp]); }),
-    d3.max(data, function(d) { return Math.max(d[header.base], d[header.comp]); })
-  ]);
-
-  svg.datum(data);
-
-  svg.append("clipPath")
-      .attr("id", "clip-below")
-    .append("path")
-      .attr("d", area.y0(height));
-
-  svg.append("clipPath")
-      .attr("id", "clip-above")
-    .append("path")
-      .attr("d", area.y0(0));
-
-  svg.append("path")
-      .attr("class", "area above")
-      .attr("clip-path", "url(#clip-above)")
-      .attr("d", area.y0(function(d) { return y(d[header.comp]); }));
-
-  svg.append("path")
-      .attr("class", "area below")
-      .attr("clip-path", "url(#clip-below)")
-      .attr("d", area);
-
-  svg.append("path")
-      .attr("class", "line")
-      .attr("d", line);
-
-  svg.append("g")
-      .attr("class", "x axis")
-      .attr("transform", "translate(0," + height + ")")
-      .call(xAxis);
-
-  svg.append("g")
-      .attr("class", "y axis")
-      .call(yAxis)
-    .append("text")
-      .attr("transform", "rotate(-90)")
-      .attr("y", 6)
-      .attr("dy", ".71em")
-      .style("text-anchor", "end");
-    });    
-    }
-    //trial(header);
-    function gene_button( hdr, index, array){
-        d = document.createElement('div');
-        $(d).addClass('btn btn-default')
-            .html(hdr.gene)
-            .attr('data-info', hdr)
-            .attr('id', hdr.gene)
-            .appendTo( $('div#gene-choosers') )
-            .click( function(){
-                $('svg').remove();
-                trial(hdr);
-            });
-    }
-    
     </script>
+
+
     <div class="row">
     <div class="col-md-12 page-header">
-        <h1>Comparison of expression <small>Gene by gene</small> </h1>
+        <h1>Comparison of expression in {{ pathway_id }}<br/> 
+            <small>Gene by gene</small> </h1>
     </div>
     </div>
     <div class="row"> 
 
     <div class="btn-group-vertical col-md-2" id="gene-choosers">
     </div>
+    
+
+    <div class="panel panel-default col-md-10">
+<nav class="navbar navbar-default" role="navigation">
+  <div class="container-fluid">
+    <!-- Brand and toggle get grouped for better mobile display -->
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" id="brand-gene" href="#"></a>
+    </div>
+
+    <!-- Collect the nav links, forms, and other content for toggling -->
+    <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+      <ul class="nav navbar-nav">
+        <li class="active"><a href="#">Link</a></li>
+        <li><a href="#">Link</a></li>
+        <li class="dropdown">
+          <a href="#" class="dropdown-toggle" data-toggle="dropdown">Dropdown <b class="caret"></b></a>
+          <ul class="dropdown-menu">
+            <li><a href="#">Action</a></li>
+            <li><a href="#">Another action</a></li>
+            <li><a href="#">Something else here</a></li>
+            <li class="divider"></li>
+            <li><a href="#">Separated link</a></li>
+            <li class="divider"></li>
+            <li><a href="#">One more separated link</a></li>
+          </ul>
+        </li>
+      </ul>
+      <ul class="nav navbar-nav navbar-right">
+        <li class="dropdown">
+          <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span id="current-inter">Interpolation:</span><b class="caret"></b></a>
+          <ul class="dropdown-menu">
+            <li><a href="#" id='inter-basis'>Basis</a></li>
+            <li><a href="#" id='inter-tense'>- tenser</a></li>
+            <li><a href="#" id='inter-relax'>- relax</a></li>
+            <li><a href="#" id='inter-linear'>Linear</a></li>
+            <li><a href="#" id='inter-step'>Step</a></li>
+          </ul>
+        </li>
+        <li class="dropdown">
+          <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span id="current-source">View by rank</span><b class="caret"></b></a>
+          <ul class="dropdown-menu">
+            <li><a href="#" id='rank-source'>By rank </a></li>
+            <li><a href="#" id='exp-source'>By expression</a></li>
+          </ul>
+        </li>
+      </ul>
+    </div><!-- /.navbar-collapse -->
+  </div><!-- /.container-fluid -->
+</nav>
+        <script>
+            $('a#rank-source').click(
+                function(){
+                    use_rank_view = true;
+                    click_current();
+                    $('span#current-source').text('View by rank');
+                }
+            )
+            $('a#exp-source').click(
+                function(){
+                    use_rank_view = false;
+                    click_current();
+                    $('span#current-source').text('View by exp.');
+                }
+            )
+        </script>
+        
+        <div class="panel-body" id="svg-holder">
+          <svg id="d3svg" width=0 height=0 />
+      </div>
+    </div>
 
     <div class="panel panel-default col-md-10">
    <div class="panel-heading">
-    <h3 class="panel-title" id="expression-title"></h3>
-  </div> 
-  <div class="panel-body" id="svg-holder">
-    </div>
+       <h3 class="panel-title" id="expression-title"></h3>
+       <div class="panel-body" id="gene-info"></div>
+    </div> 
     </div>
     </div>
     <script>
     temp = '';
-    $.getJSON('{{url_for('static', filename='data/HISTONE_MODIFICATION_descriptions.json') }}', function( headers ){
-        headers.forEach( gene_button ); 
-        temp = headers;
+    p_id = '{{pathway_id}}';
+
+    function click_current(){
+        if($('div#gene-choosers').children().length){
+            var current_button = $('div#gene-choosers').children()[ current_gene_element ];
+            current_button.click();
+            window.scrollTo( 0,0);
+            if( ! $(current_button).is(".active") ){
+                $(current_button).addClass("active")
+                window.setTimeout( function(){ 
+                    if( $(current_button).is(".active") ){
+                        $(current_button).removeClass("active");
+                    }
+            }, 300);
+            }
+        }
+    }
+    $(
+function(){
+    if( p_id.length > 1 ){
+        $('#loadingModal').modal({
+            keyboard: false
+        });
+        $('#loadingModal').modal('show');
+        $('span#loading-element').text('{{ pathway_id }}');
+        var path = '{{ url_for('get_bivariate', net_table = 'net_info_table', 
+                            net_source_id = 'c5.all.v4.0.symbols.gmt',
+                            source_dataframe = 'exp_mat_b6_wt_q111.pandas',
+                            metadata_file ='metadata_b6_wt_q111.txt',  
+                            pathway_id = pathway_id,
+                            restype = 'rank')}}';
+        $.getJSON( path, function( headers ){ 
+            headers.forEach( gene_button );
+            click_current();
+            $('#loadingModal').modal('hide');
+        });
+    }
+    $(document).keydown(function(e){
+    if (e.keyCode == 38) { 
+        if (current_gene_element > 0){
+            current_gene_element--;
+            click_current();
+        }
+       return false;
+    }
+    if (e.keyCode == 40) { 
+        if (current_gene_element < $('div#gene-choosers').children().length){
+            current_gene_element++;
+            click_current();
+        }
+        return false;
+    }
+    });
     });
     </script>
-
+{% include 'loading-modal.html' %}
 {% endblock %}

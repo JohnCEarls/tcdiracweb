@@ -5,3 +5,4 @@ dist/
 *.csv
 tcdiracweb.egg-info
 tcdiracweb/static/data/*
+*.pyc
