@@ -131,9 +131,10 @@ def d3test():
 def check_id():
     if 'user_data' in session and 'id' in session['user_data']:
         me = google.get('userinfo')
-        app.logger.debug( me.data['id'] )
-        app.logger.debug(   session['user_data']['id'] )
-        return u_man.hash_id( me.data['id'] ) == session['user_data']['id']
+        if 'id' in me.data:#server reboot fubars this, just log user out
+            app.logger.debug( me.data['id'] )
+            app.logger.debug(   session['user_data']['id'] )
+            return u_man.hash_id( me.data['id'] ) == session['user_data']['id']
     return False
 
 
