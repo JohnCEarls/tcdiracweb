@@ -3,6 +3,8 @@ class Config(object):
     TESTING = False
     SOURCE_DATA_BUCKET='hd_working_0'
     DEFAULT_NET_TABLE='net_info_table'
+    STARCLUSTER_KEY_LOCATION = '/home/sgeadmin'
+
 
 class ProductionConfig(Config):
     pass

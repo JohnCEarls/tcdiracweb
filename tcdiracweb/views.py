@@ -124,9 +124,12 @@ def genedifference( pathway_id ):
     return render_template('differencechart.html', pathway_id=pathway_id)
 
 
-@app.route('/d3test')
-def d3test():
-    return render_template('differencechart.html')
+@app.route('/scconfig/<action>')
+def scconfig( template ):
+    if template == "genkey":
+        tcdirac.utils.starclustercfg.gen_key( session['user_data']['id'] )
+    if template == "base":
+        tcdirac.utils.starclustercfg.get_base( session['user_data']['id'] )
 
 def check_id():
     if 'user_data' in session and 'id' in session['user_data']:
