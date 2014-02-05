@@ -97,8 +97,6 @@ def register():
         return redirect(url_for('logout'))
 
 
-
-
 @app.route('/biv/<net_source_id>/<source_dataframe>/<metadata_file>/<pathway_id>/<restype>')
 @app.route('/biv/<net_table>/<net_source_id>/<source_dataframe>/<metadata_file>/<pathway_id>/<restype>')
 def get_bivariate( pathway_id, net_source_id, source_dataframe, 
@@ -123,6 +121,35 @@ def get_bivariate( pathway_id, net_source_id, source_dataframe,
 def genedifference( pathway_id ):
     return render_template('differencechart.html', pathway_id=pathway_id)
 
+@app.route('/clustermain')
+def clustermain():
+    return render_template('clustermain.html')
+
+@app.route('/createcluster', methods=['POST'])
+def scgenerate_config():
+    if request.method == 'POST':
+        allowed = ['cluster_size', 'cluster_type', 'cluster_prefix', 'region', 'availability_zone','spot_bid', 'force_spot_master' ]
+        args = {}
+        for k, v in request.form.iteritems():
+            if k in allowed and v != 'na':
+                args[k] = str(v.strip())
+        if cluster_type not in args:
+            args['cluster_type'] = 'data'
+        ms = AdversaryMasterServer()
+        if args['cluster_type'] == 'data':
+            ms.configure_data_cluster(**args)
+        if args['cluster_type'] == 'gpu':
+            ms.configure_data_cluster(**args)
+
+@app.route('/scconfig/<master_name>/<cluster_name>')
+def scget_config(master_name, cluster_name):
+    from utils.starclustercfg import AdversaryServer, SCConfigError
+    try:
+        ams = AdversaryServer(master_name, cluster_name, no_create=True )
+        return ams.config + render_template('sc-plugins.cfg') + \
+            render_template('sc-security-group.cfg')
+    except SCConfigError as scce:
+        return  jsonify({'error': scce.message})
 
 @app.route('/scconfig/<action>')
 def scconfig( template ):

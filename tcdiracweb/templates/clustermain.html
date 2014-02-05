@@ -1,0 +1,87 @@
+{%extends 'layout.html' %}
+{% block title %} Cluster management {% endblock %}
+{% block content %}
+<script type="text/javascript">
+AWS.config.credentials = new AWS.WebIdentityCredentials({
+        RoleArn: "arn:aws:iam::315557446885:role/tcdiracwebRoleGoogle",
+    }); 
+AWS.config.region = 'us-east-1';
+AWS.config.credentials.params.WebIdentityToken = "{{session['id_token']}}";
+</script>
+<style>
+    form#cluster_config {
+        width: 200px;
+    }
+
+</style>
+
+<script type="text/javascript">
+
+function set_cluster_default( type ){
+    var default_data = {'cluster_prefix': 'gpu-data',
+                        'cluster_size': '10',
+                        'region':'us-east-1',
+                        'spot_bid':'.50',
+                        'force-spot-master':false};
+
+   var default_gpu = {'cluster_prefix': 'gpu-server',
+                    'cluster_size': '1',
+                    'spot_bid':'2.00',
+                        'region':'us-east-1',
+                            'force-spot-master':false};
+
+  var regions = {'data': ['us-east-1', 'us-west-1', 'us-west-2'],
+                 'gpu':['us-east-1', 'eu-west-1' ]};
+   if(type ='data'){
+       deflt = default_data;
+       reg = regions.data;
+   } else {
+       deflt = default_gpu;
+       reg = regions.gpu
+  }
+   for (var setting in deflt){
+       try{
+           $('span#' + setting).text(deflt[setting])
+       }catch(err){
+         console.log(err);
+       }
+
+   }
+   $('select#region').empty()
+       reg.forEach(function(arg){$('select#region').append( arg );});
+
+}
+
+$(function(){
+        set_cluster_default($('#cluster_type option:selected'));
+        $('select#cluster_type').change( function(){
+            set_cluster_default($('#cluster_type:selected').val());});
+
+          });
+
+</script>
+<form role="form" id="cluster_config">
+        <label for="cluster_type">Cluster Type</label>
+        <select  class="form-control" name="cluster_type" id="cluster_type">
+            <option value="data">Data Cluster</option>
+            <option value="gpu">GPU Cluster</option>
+        </select>
+        <label for="cluster_prefix">Cluster name prefix<span id="default"></span></label>
+        <input type="text" class="form-control" id="cluster_prefix"
+        name="cluster_prefix" placeholder="Prefix for cluster name">
+        <label for="spot_bid">Choose spot bid price<span id="default"></span></label>
+        <input type="text" class="form-control" name="spot_bid" id="spot_bid" placeholder="Spot Bid">
+        <label for="region">Choose region<span id="default"></span></label>
+        <select  class="form-control" name="region" id="region">
+            <option>us-east-1</option>
+            <option>us-west-1</option>
+            <option>us-west-2</option>
+        </select>
+        <label>
+        <input type="checkbox"> Make cluster master a spot instance
+        </label>
+        <button type="button" class="btn btn-default">Configure new cluster</button>
+
+
+</form>
+{% endblock %}

@@ -7,6 +7,12 @@ import ConfigParser
 from pynamodb.models import Model
 from pynamodb.attributes import (UnicodeAttribute, UTCDateTimeAttribute, 
         NumberAttribute, UnicodeSetAttribute, JSONAttribute)
+import StringIO
+from flask import render_template
+from tcdiracweb import app
+
+class SCConfigError(Exception):
+    pass
 
 class AdversaryMaster(Model):
     table_name = 'adversary-master'
@@ -19,15 +25,18 @@ class AdversaryMaster(Model):
     key_location = UnicodeAttribute()
 
 class StarclusterConfig(Model):
-    table_name='sc-config'
+    table_name='sc-adversary-config'
     master_name = UnicodeAttribute( hash_key=True )
     cluster_name = UnicodeAttribute( range_key=True )
-    cluster_master_instance = UnicodeAttribute()
-    region = UnicodeAttribute()
-    key_name = UnicodeAttribute()
+    cluster_master_instance = UnicodeAttribute(default='')
+    cluster_type = UnicodeAttribute(default='data')
+    node_type = UnicodeAttribute(default='m1.xlarge')
+    region = UnicodeAttribute(default='')
     num_nodes = NumberAttribute(default=0)
-    nodes = UnicodeSetAttribute()
+    nodes = UnicodeSetAttribute(default=[])
     active = NumberAttribute(default=0)
+    ready = NumberAttribute(default=0)
+    config = UnicodeAttribute(default='')
 
 
 class AdversaryMasterServer:
@@ -51,6 +60,24 @@ class AdversaryMasterServer:
     @property
     def region( self ):
         return self._model.region
+
+    @property
+    def master_name(self):
+        return self._model.master_name
+
+    @property
+    def unstarted_data_clusters(self):    
+        clusters = StarclusterConfig.scan(master_name__eq=self.master_name)
+        return [AdversaryDataServer( self.master_name, cluster.cluster_name ) 
+                for cluster in clusters if cluster.active == 0 and 
+                cluster.cluster_type=='data']
+
+    @property
+    def unstarted_gpu_clusters(self):    
+        clusters = StarclusterConfig.scan(master_name__eq=self.master_name)
+        return [AdversaryGPUServer( self.master_name, cluster.cluster_name ) 
+                for cluster in clusters if cluster.active == 0 and 
+                cluster.cluster_type=='gpu']
 
     def get_key( self, region):
         self._model.refresh()
@@ -83,17 +110,18 @@ class AdversaryMasterServer:
         os.chmod( os.path.join( key_location, k_file ), 0600 )
         return (key_location , key_name)
 
-    def _aws_info_config( self,config):
+    def _aws_info_config( self,config, region):
         md = boto.utils.get_instance_metadata()
         config.add_section('aws info')
         sc = md['iam']['security-credentials']['gpu-data-instance']
-        
         #aws info
-        config.set('aws info', 'aws_access_key_id',sc['AccessKeyId'])
-        config.set('aws info', 'aws_secret_access_key', sc['SecretAccessKey'])
+        config.set('aws info', 'aws_access_key_id','IGNORE')
+        config.set('aws info', 'aws_secret_access_key', 'IGNORE')
+        
         config.set('aws info', 'AWS_CONFIG_TABLE', 'sc_config')
         config.set('aws info', 'AWS_META_BUCKET','ndprice-aws-meta')
         config.set('aws info', 'AWS_SPOT_TABLE', 'spot_history')
+        config.set('aws info', 'AWS_REGION_NAME', region)
         return config
 
     def _key_config( self, config, region):
@@ -103,7 +131,53 @@ class AdversaryMasterServer:
         config.set('key %s' % key, 'key_location', os.path.join( key_location, '%s.pem' % key) )
         return config
 
+
     def _data_cluster_config( self, config, 
+            cluster_prefix='gpu-data', 
+            region='us-east-1', 
+            cluster_size=10, 
+            cluster_shell='bash', 
+            node_image_id='ami-9b0924f2', 
+            node_instance_type='m1.xlarge', 
+            iam_profile='gpu-data-instance', 
+            dns_prefix=True,
+            disable_queue=True,
+            spot_bid='.50',
+            permissions = [],
+            availability_zone=None,
+            plugins= ['base-tgr', 'gpu-data-tgr', 'user-bootstrap', 'data-bootstrap'], 
+            cluster_user='sgeadmin',
+            force_spot_master=True):
+        return self._cluster_config( config,cluster_prefix,region, cluster_size, 
+                cluster_shell, node_image_id, node_instance_type, iam_profile, 
+                dns_prefix, disable_queue, spot_bid, permissions,
+                availability_zone, plugins, cluster_user, force_spot_master)
+
+    def _gpu_cluster_config( self,  config, 
+            cluster_prefix='gpu-server', 
+            region='us-east-1', 
+            cluster_size=1, 
+            cluster_shell='bash', 
+            node_image_id='ami-4f5c6126', 
+            node_instance_type='cg1.4xlarge', 
+            iam_profile='gpu-data-instance', 
+            dns_prefix=True,
+            disable_queue=True,
+            spot_bid='2.00',
+            permissions = [],
+            availability_zone=None,
+            plugins= ['base-tgr', 'gpu-server-tgr', 'user-bootstrap', 'gpu-bootstrap'], 
+            cluster_user='sgeadmin',
+            force_spot_master=True):
+        return self._cluster_config( config,cluster_prefix,region, cluster_size, 
+                cluster_shell, node_image_id, node_instance_type, iam_profile, 
+                dns_prefix, disable_queue, spot_bid, permissions,
+                availability_zone, plugins, cluster_user, force_spot_master)
+
+
+
+
+    def _cluster_config( self, config, 
             cluster_prefix='gpu-data', 
             region='us-east-1', 
             cluster_size=10, 
@@ -123,12 +197,16 @@ class AdversaryMasterServer:
         self._model.refresh()
         ctr = 0
         cluster_name = '%s-%i' % ( cluster_prefix, ctr)
-        while cluster_name in self._model.data_clusters:
+        existing_clusters =[item.cluster_name for item in 
+                StarclusterConfig.query( self._model.master_name, 
+                    cluster_name__begins_with=cluster_prefix)]
+        
+        while cluster_name in existing_clusters:
             ctr += 1
             cluster_name = '%s-%i' % ( cluster_prefix, ctr)
         s = 'cluster %s' % cluster_name
         config.add_section(s)
-        config.set(s, 'key_name', self.get_key(region) )
+        config.set(s, 'keyname', self.get_key(region) )
         config.set(s, 'cluster_size', cluster_size)
         config.set(s, 'cluster_user', cluster_user)
         config.set(s, 'cluster_shell', cluster_shell)
@@ -148,33 +226,124 @@ class AdversaryMasterServer:
             config.set(s, 'permissions', ', '.permissions )
         if force_spot_master:
             config.set(s, 'force_spot_master', 'True')
-        return config
+        return (cluster_name, config)
 
-    def make_data_cluster( self, data_cluster_prefix='gpu-data', region=None):
-        if region is None:
+    def configure_data_cluster( self, **kwargs):
+        if kwargs is None:
+            kwargs = {}
+        if 'region' not in kwargs:
             region = self.region
+        if 'cluster_prefix' not in kwargs:
+            cluster_prefix = 'gpu-data'
         config = ConfigParser.RawConfigParser()
-        config = self._aws_info_config( config ) 
+        config = self._aws_info_config( config, region ) 
         config = self._key_config( config , region)
-        config = self. _data_cluster_config( config )
+        kwargs['config'] = config
+        kwargs['cluster_prefix'] = cluster_prefix
+        kwargs['region'] = region
+        cluster_name, config = self._data_cluster_config( **kwargs )
+        stringIO = StringIO.StringIO()
+        config.write( stringIO )
+        config_str = stringIO.getvalue()
+        ads = AdversaryDataServer( self._model.master_name, cluster_name, region )
+        ads.set_config( config_str )
 
 
-        #key info
+    def configure_gpu_cluster( self, **kwargs):
+        if kwargs is None:
+            kwargs = {}
+        if 'region' not in kwargs:
+            region = self.region
+        if 'cluster_prefix' not in kwargs:
+            cluster_prefix = 'gpu-server'
+        config = ConfigParser.RawConfigParser()
+        config = self._aws_info_config( config, region ) 
+        config = self._key_config( config , region)
+        kwargs['config'] = config
+        kwargs['cluster_prefix'] = cluster_prefix
+        kwargs['region'] = region
+        cluster_name, config = self. _gpu_cluster_config( **kwargs )
+        stringIO = StringIO.StringIO()
+        config.write( stringIO )
+        config_str = stringIO.getvalue()
+        ads = AdversaryGPUServer( self._model.master_name, cluster_name, region )
+        ads.set_config( config_str )
 
-        with open('tmp.txt','w+') as tmp:
-            config.write(tmp)
-            tmp.seek(0)
-            for line in tmp:
-                print line
 
-        os.remove('tmp.txt')
+class AdversaryServer:
+    def __init__(self, master_name, cluster_name, region=None, no_create=False):
+        if not StarclusterConfig.exists():
+            StarclusterConfig.create_table( read_capacity_units=2, write_capacity_units=1, wait=True)
+        sc_config = StarclusterConfig.get( master_name, cluster_name )
+        if sc_config:
+            self._model = sc_config
+        elif no_create:
+            raise SCConfigError("%s, %s does not exist" % (master_name, cluster_name))
 
+        else:    
+            self._model = self._create_model( master_name, cluster_name, region )
 
+    def _create_model(self, master_name, cluster_name, region):
+        sc_model = StarclusterConfig( master_name, cluster_name )
+        sc_model.region = region 
+        sc_model.cluster_type='data'
+        sc_model.save()
+        return sc_model
 
+    def set_config( self, config):
+        self._model.refresh()
+        self._model.config = config
+        self._model.save()
+
+    def set_active(self, active):
+        self._model.refresh()
+        self._model.active = 1 if active else 0
+        self._model.save()
+
+    @property
+    def active(self):
+        self._model.refresh()
+        return self._model.active == 1
+
+    @property
+    def config(self):
+        self._model.refresh()
+        return str(self._model.config)
+
+class AdversaryDataServer(AdversaryServer):
+    def _create_model(self, master_name, cluster_name, region):
+        sc_model = StarclusterConfig( master_name, cluster_name )
+        sc_model.region = region 
+        sc_model.cluster_type='data'
+        sc_model.node_type='m1.xlarge'
+        sc_model.save()
+        return sc_model
+
+class AdversaryGPUServer(AdversaryServer):
+    def _create_model(self, master_name, cluster_name, region):
+        sc_model = StarclusterConfig( master_name, cluster_name )
+        sc_model.region = region 
+        sc_model.cluster_type='gpu'
+        sc_model.node_type='cg1.4xlarge'
+        sc_model.save()
+        return sc_model
 
 
 if __name__ == "__main__":
+    if not AdversaryMaster.exists():
+        AdversaryMaster.create_table( read_capacity_units=2, write_capacity_units=1, wait=True)
+    if not StarclusterConfig.exists():
+        StarclusterConfig.create_table( read_capacity_units=2, write_capacity_units=1, wait=True)
     ams = AdversaryMasterServer()
-    print ams.get_key('us-east-1')
-    print ams.make_data_cluster()
+    #print ams.get_key('us-east-1')
+    print ams.configure_data_cluster()
+    print ams.configure_gpu_cluster()
+    ds = ams.unstarted_data_clusters
+    for ads in ds:
+        print ads.config
+
+
+    ds = ams.unstarted_gpu_clusters
+    for ads in ds:
+        print ads.config
 
