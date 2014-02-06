@@ -32,12 +32,20 @@
             url_for('static', filename='aws-sdk-2.0.0-rc8.js') }}">
         </script>
         <script type="text/javascript" src="{{ 
+            url_for('static', filename='jquery.metadata.js') }}"></script>
+        <script type="text/javascript" src="{{ 
+            url_for('static', filename='jquery.tablesorter.js') }}"></script>
+        <script type="text/javascript" src="{{ 
                 url_for('static', filename="jquery.tipsy.js") }}">
         </script>
         <script type="text/javascript" src="{{ 
             url_for('static', filename='js/bootstrap.min.js') }}"></script>
         <script type="text/javascript" src="{{ 
             url_for('static', filename='d3.v3.js') }}"></script>
+
+        <script type="text/javascript" src="{{ 
+            url_for('static', filename='js/messages.js') }}"></script>
+        
     </head>
     <body>
         {% with messages = get_flashed_messages(with_categories=true) %}

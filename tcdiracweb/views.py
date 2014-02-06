@@ -9,7 +9,7 @@ from werkzeug.security import generate_password_hash, \
 
 google = tcdiracweb.utils.app_init.get_google( app )
 app.logger.setLevel(logging.DEBUG)
-
+import boto.utils
 
 def secure_page(f):
     @wraps(f)
@@ -122,24 +122,38 @@ def genedifference( pathway_id ):
     return render_template('differencechart.html', pathway_id=pathway_id)
 
 @app.route('/clustermain')
+@secure_page
 def clustermain():
-    return render_template('clustermain.html')
+    instance_id =  boto.utils.get_instance_identity()['document']['instanceId']
+    return render_template('clustermain.html', instance_id=instance_id)
 
-@app.route('/createcluster', methods=['POST'])
+@app.route('/createcluster', methods=['POST','GET'])
 def scgenerate_config():
+    app.logger.debug(repr(request))
+    from tcdiracweb.utils.starclustercfg import AdversaryMasterServer
     if request.method == 'POST':
-        allowed = ['cluster_size', 'cluster_type', 'cluster_prefix', 'region', 'availability_zone','spot_bid', 'force_spot_master' ]
-        args = {}
-        for k, v in request.form.iteritems():
-            if k in allowed and v != 'na':
-                args[k] = str(v.strip())
-        if cluster_type not in args:
-            args['cluster_type'] = 'data'
-        ms = AdversaryMasterServer()
-        if args['cluster_type'] == 'data':
-            ms.configure_data_cluster(**args)
-        if args['cluster_type'] == 'gpu':
-            ms.configure_data_cluster(**args)
+        try:
+            allowed = ['cluster_size', 'cluster_prefix', 'region', 'availability_zone','spot_bid']
+            args = {}
+            for k, v in request.form.iteritems():
+                if k in allowed and v != 'na' and k != 'cluster_type':
+                    args[k] = str(v.strip())
+
+            if 'force_spot_master' in request.form and request.form['force_spot_master'] == 'true':
+                args['force_spot_master'] = True
+            else:
+                args['force_spot_master'] = False
+            ms = AdversaryMasterServer()
+            app.logger.debug( str(args) )
+            app.logger.debug( str(request.form))
+            if request.form['cluster_type'] == 'data':
+                ms.configure_data_cluster(**args)
+            elif request.form['cluster_type'] == 'gpu':
+                ms.configure_gpu_cluster(**args)
+        except Exception as e:
+            return jsonify({'error': 'SSError: ' + e.message})
+        return jsonify({'info':'Config generation complete'});
+
 
 @app.route('/scconfig/<master_name>/<cluster_name>')
 def scget_config(master_name, cluster_name):

@@ -233,8 +233,12 @@ class AdversaryMasterServer:
             kwargs = {}
         if 'region' not in kwargs:
             region = self.region
+        else:
+            region = kwargs['region']
         if 'cluster_prefix' not in kwargs:
             cluster_prefix = 'gpu-data'
+        else:
+            cluster_prefix = kwargs['cluster_prefix']
         config = ConfigParser.RawConfigParser()
         config = self._aws_info_config( config, region ) 
         config = self._key_config( config , region)
@@ -254,8 +258,12 @@ class AdversaryMasterServer:
             kwargs = {}
         if 'region' not in kwargs:
             region = self.region
+        else:
+            region = kwargs['region']
         if 'cluster_prefix' not in kwargs:
             cluster_prefix = 'gpu-server'
+        else:
+            cluster_prefix = kwargs['cluster_prefix']
         config = ConfigParser.RawConfigParser()
         config = self._aws_info_config( config, region ) 
         config = self._key_config( config , region)
@@ -279,8 +287,7 @@ class AdversaryServer:
             self._model = sc_config
         elif no_create:
             raise SCConfigError("%s, %s does not exist" % (master_name, cluster_name))
-
-        else:    
+        else:
             self._model = self._create_model( master_name, cluster_name, region )
 
     def _create_model(self, master_name, cluster_name, region):

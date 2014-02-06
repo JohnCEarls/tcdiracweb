@@ -6,3 +6,4 @@ dist/
 tcdiracweb.egg-info
 tcdiracweb/static/data/*
 *.pyc
+.svn/*
