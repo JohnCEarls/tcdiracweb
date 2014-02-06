@@ -5,11 +5,18 @@ import os, os.path
 from datetime import datetime
 import ConfigParser
 from pynamodb.models import Model
-from pynamodb.attributes import (UnicodeAttribute, UTCDateTimeAttribute, 
+from pynamodb.attributes import (UnicodeAttribute, UTCDateTimeAttribute,
         NumberAttribute, UnicodeSetAttribute, JSONAttribute)
 import StringIO
 from flask import render_template
 from tcdiracweb import app
+import sys
+import select
+import boto.sqs
+from boto.sqs.message import Message
+import json
+import multiprocessing
+import subprocessh 
 
 class SCConfigError(Exception):
     pass
@@ -43,7 +50,7 @@ class AdversaryMasterServer:
     def __init__(self, key_location='/home/sgeadmin'):
         md = boto.utils.get_instance_metadata()
         name = md['instance-id']
- 
+
         region = md['placement']['availability-zone'][:-1]
         if not AdversaryMaster.exists():
             AdversaryMaster.create_table( read_capacity_units=2, write_capacity_units=1, wait=True)
@@ -66,17 +73,17 @@ class AdversaryMasterServer:
         return self._model.master_name
 
     @property
-    def unstarted_data_clusters(self):    
+    def unstarted_data_clusters(self):
         clusters = StarclusterConfig.scan(master_name__eq=self.master_name)
-        return [AdversaryDataServer( self.master_name, cluster.cluster_name ) 
-                for cluster in clusters if cluster.active == 0 and 
+        return [AdversaryDataServer( self.master_name, cluster.cluster_name )
+                for cluster in clusters if cluster.active == 0 and
                 cluster.cluster_type=='data']
 
     @property
-    def unstarted_gpu_clusters(self):    
+    def unstarted_gpu_clusters(self):
         clusters = StarclusterConfig.scan(master_name__eq=self.master_name)
-        return [AdversaryGPUServer( self.master_name, cluster.cluster_name ) 
-                for cluster in clusters if cluster.active == 0 and 
+        return [AdversaryGPUServer( self.master_name, cluster.cluster_name )
+                for cluster in clusters if cluster.active == 0 and
                 cluster.cluster_type=='gpu']
 
     def get_key( self, region):
@@ -84,7 +91,7 @@ class AdversaryMasterServer:
         if region not in self._model.key_pairs:
             key_location ,new_key = self._gen_key( region )
             kp = self._model.key_pairs
-            kp[region] = new_key 
+            kp[region] = new_key
             self._model.key_pairs = kp
             self._model.key_location = key_location
             self._model.save()
@@ -94,7 +101,7 @@ class AdversaryMasterServer:
         ec2 = boto.ec2.connect_to_region( region )
         key_name = 'sc-key-%s-%s' % (self._model.master_name, region )
         k_file = '.'.join( [ key_name, 'pem' ])
-        
+
         if os.path.isfile(os.path.join(key_location,k_file )) and \
                 ec2.get_key_pair( key_name ):
             #we have a key and key_pair
@@ -117,7 +124,7 @@ class AdversaryMasterServer:
         #aws info
         config.set('aws info', 'aws_access_key_id','IGNORE')
         config.set('aws info', 'aws_secret_access_key', 'IGNORE')
-        
+
         config.set('aws info', 'AWS_CONFIG_TABLE', 'sc_config')
         config.set('aws info', 'AWS_META_BUCKET','ndprice-aws-meta')
         config.set('aws info', 'AWS_SPOT_TABLE', 'spot_history')
@@ -132,75 +139,75 @@ class AdversaryMasterServer:
         return config
 
 
-    def _data_cluster_config( self, config, 
-            cluster_prefix='gpu-data', 
-            region='us-east-1', 
-            cluster_size=10, 
-            cluster_shell='bash', 
-            node_image_id='ami-9b0924f2', 
-            node_instance_type='m1.xlarge', 
-            iam_profile='gpu-data-instance', 
+    def _data_cluster_config( self, config,
+            cluster_prefix='gpu-data',
+            region='us-east-1',
+            cluster_size=10,
+            cluster_shell='bash',
+            node_image_id='ami-9b0924f2',
+            node_instance_type='m1.xlarge',
+            iam_profile='gpu-data-instance',
             dns_prefix=True,
             disable_queue=True,
             spot_bid='.50',
             permissions = [],
             availability_zone=None,
-            plugins= ['base-tgr', 'gpu-data-tgr', 'user-bootstrap', 'data-bootstrap'], 
+            plugins= ['base-tgr', 'gpu-data-tgr', 'user-bootstrap', 'data-bootstrap'],
             cluster_user='sgeadmin',
             force_spot_master=True):
-        return self._cluster_config( config,cluster_prefix,region, cluster_size, 
-                cluster_shell, node_image_id, node_instance_type, iam_profile, 
+        return self._cluster_config( config,cluster_prefix,region, cluster_size,
+                cluster_shell, node_image_id, node_instance_type, iam_profile,
                 dns_prefix, disable_queue, spot_bid, permissions,
                 availability_zone, plugins, cluster_user, force_spot_master)
 
-    def _gpu_cluster_config( self,  config, 
-            cluster_prefix='gpu-server', 
-            region='us-east-1', 
-            cluster_size=1, 
-            cluster_shell='bash', 
-            node_image_id='ami-4f5c6126', 
-            node_instance_type='cg1.4xlarge', 
-            iam_profile='gpu-data-instance', 
+    def _gpu_cluster_config( self,  config,
+            cluster_prefix='gpu-server',
+            region='us-east-1',
+            cluster_size=1,
+            cluster_shell='bash',
+            node_image_id='ami-4f5c6126',
+            node_instance_type='cg1.4xlarge',
+            iam_profile='gpu-data-instance',
             dns_prefix=True,
             disable_queue=True,
             spot_bid='2.00',
             permissions = [],
             availability_zone=None,
-            plugins= ['base-tgr', 'gpu-server-tgr', 'user-bootstrap', 'gpu-bootstrap'], 
+            plugins= ['base-tgr', 'gpu-server-tgr', 'user-bootstrap', 'gpu-bootstrap'],
             cluster_user='sgeadmin',
             force_spot_master=True):
-        return self._cluster_config( config,cluster_prefix,region, cluster_size, 
-                cluster_shell, node_image_id, node_instance_type, iam_profile, 
+        return self._cluster_config( config,cluster_prefix,region, cluster_size,
+                cluster_shell, node_image_id, node_instance_type, iam_profile,
                 dns_prefix, disable_queue, spot_bid, permissions,
                 availability_zone, plugins, cluster_user, force_spot_master)
 
 
 
 
-    def _cluster_config( self, config, 
-            cluster_prefix='gpu-data', 
-            region='us-east-1', 
-            cluster_size=10, 
-            cluster_shell='bash', 
-            node_image_id='ami-9b0924f2', 
-            node_instance_type='m1.xlarge', 
-            iam_profile='gpu-data-instance', 
+    def _cluster_config( self, config,
+            cluster_prefix='gpu-data',
+            region='us-east-1',
+            cluster_size=10,
+            cluster_shell='bash',
+            node_image_id='ami-9b0924f2',
+            node_instance_type='m1.xlarge',
+            iam_profile='gpu-data-instance',
             dns_prefix=True,
             disable_queue=True,
             spot_bid='.50',
             permissions = [],
             availability_zone=None,
-            plugins= ['base-tgr', 'gpu-data-tgr', 'user-bootstrap', 'data-bootstrap'], 
+            plugins= ['base-tgr', 'gpu-data-tgr', 'user-bootstrap', 'data-bootstrap'],
             cluster_user='sgeadmin',
             force_spot_master=True
             ):
         self._model.refresh()
         ctr = 0
         cluster_name = '%s-%i' % ( cluster_prefix, ctr)
-        existing_clusters =[item.cluster_name for item in 
-                StarclusterConfig.query( self._model.master_name, 
+        existing_clusters =[item.cluster_name for item in
+                StarclusterConfig.query( self._model.master_name,
                     cluster_name__begins_with=cluster_prefix)]
-        
+
         while cluster_name in existing_clusters:
             ctr += 1
             cluster_name = '%s-%i' % ( cluster_prefix, ctr)
@@ -240,7 +247,7 @@ class AdversaryMasterServer:
         else:
             cluster_prefix = kwargs['cluster_prefix']
         config = ConfigParser.RawConfigParser()
-        config = self._aws_info_config( config, region ) 
+        config = self._aws_info_config( config, region )
         config = self._key_config( config , region)
         kwargs['config'] = config
         kwargs['cluster_prefix'] = cluster_prefix
@@ -265,7 +272,7 @@ class AdversaryMasterServer:
         else:
             cluster_prefix = kwargs['cluster_prefix']
         config = ConfigParser.RawConfigParser()
-        config = self._aws_info_config( config, region ) 
+        config = self._aws_info_config( config, region )
         config = self._key_config( config , region)
         kwargs['config'] = config
         kwargs['cluster_prefix'] = cluster_prefix
@@ -292,7 +299,7 @@ class AdversaryServer:
 
     def _create_model(self, master_name, cluster_name, region):
         sc_model = StarclusterConfig( master_name, cluster_name )
-        sc_model.region = region 
+        sc_model.region = region
         sc_model.cluster_type='data'
         sc_model.save()
         return sc_model
@@ -317,10 +324,14 @@ class AdversaryServer:
         self._model.refresh()
         return str(self._model.config)
 
+    def start_cluster(self):
+        self._model.refresh()
+
+
 class AdversaryDataServer(AdversaryServer):
     def _create_model(self, master_name, cluster_name, region):
         sc_model = StarclusterConfig( master_name, cluster_name )
-        sc_model.region = region 
+        sc_model.region = region
         sc_model.cluster_type='data'
         sc_model.node_type='m1.xlarge'
         sc_model.save()
@@ -329,12 +340,49 @@ class AdversaryDataServer(AdversaryServer):
 class AdversaryGPUServer(AdversaryServer):
     def _create_model(self, master_name, cluster_name, region):
         sc_model = StarclusterConfig( master_name, cluster_name )
-        sc_model.region = region 
+        sc_model.region = region
         sc_model.cluster_type='gpu'
         sc_model.node_type='cg1.4xlarge'
         sc_model.save()
         return sc_model
 
+
+def run_sc( starcluster_bin, url, master_name,cluster_name ):
+    adv_ser = AdversaryServer(master_name, cluster_name)
+    pid = multiprocessing.current_process()
+    base_message = {'cluster_name': cluster_name, 'master_name': master_name, 'pid':str(pid) }
+        
+    sqs =boto.sqs.connect_to_region("us-east-1")
+    q = sqs.create_queue('starcluster-results')
+    if adv_ser.active:
+        base_message['type'] = 'system'
+        base_message['msg'] = 'Error: already active'
+        q.write( Message(body=json.dumps(message)) )
+    sc_command = "%s -c %s/%s/%s start -c %s %s" %( os.path.expanduser(starcluster_bin), url,master_name, cluster_name, cluster_name, cluster_name)
+    sc_p = subprocess.Popen( sc_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True )
+    stdout = []
+    stderr = []
+    errors = False
+    while True:
+        reads = [sc_p.stdout.fileno(), sc_p.stderr.fileno()]
+        ret = select.select(reads, [], [])
+        for fd in ret[0]:
+            if fd == sc_p.stdout.fileno():
+                read = sc_p.stdout.readline()
+                base_message['type'] ='stdout'
+                base_message['msg'] = read.strip()
+                q.write(Message(body=json.dumps(base_message)))
+            if fd == sc_p.stderr.fileno():
+                read = sc_p.stderr.readline()
+                base_message['type'] ='stderr'
+                base_message['msg'] = read.strip()
+                q.write(Message(body=json.dumps(base_message)))
+        if sc_p.poll() != None:
+            base_message['type'] = 'system'
+            base_message['msg'] = 'Complete'
+            if errors:
+                base_message['msg'] += ':Errors exist'
+            break
 
 if __name__ == "__main__":
     if not AdversaryMaster.exists():

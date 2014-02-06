@@ -1,11 +1,13 @@
 from tcdiracweb import app
-import tcdiracweb.utils.app_init 
+import tcdiracweb.utils.app_init
 import tcdiracweb.utils.user_management as u_man
 import logging
 from flask import Flask, redirect, url_for, session, request, jsonify, render_template, flash
 from functools import wraps
 from werkzeug.security import generate_password_hash, \
              check_password_hash
+import multiprocessing
+
 
 google = tcdiracweb.utils.app_init.get_google( app )
 app.logger.setLevel(logging.DEBUG)
@@ -99,13 +101,13 @@ def register():
 
 @app.route('/biv/<net_source_id>/<source_dataframe>/<metadata_file>/<pathway_id>/<restype>')
 @app.route('/biv/<net_table>/<net_source_id>/<source_dataframe>/<metadata_file>/<pathway_id>/<restype>')
-def get_bivariate( pathway_id, net_source_id, source_dataframe, 
+def get_bivariate( pathway_id, net_source_id, source_dataframe,
         metadata_file, restype = 'expression',
         net_table=app.config['DEFAULT_NET_TABLE'] ):
     import json
     import tcdiracweb.utils.maketsv as tsv
     import os.path
-    app.logger.warning( '/'.join([pathway_id, net_source_id, source_dataframe, 
+    app.logger.warning( '/'.join([pathway_id, net_source_id, source_dataframe,
         metadata_file, restype, net_table]))
     app_path = os.path.dirname(__file__)
     source_bucket = app.config['SOURCE_DATA_BUCKET']
@@ -154,6 +156,16 @@ def scgenerate_config():
             return jsonify({'error': 'SSError: ' + e.message})
         return jsonify({'info':'Config generation complete'});
 
+@app.route('/createcluster/<cluster_name>')
+def create_cluster( cluster_name ):
+    from tcdiracweb.utils import starclustercfg
+    s_bin = '/home/sgeadmin/.local/bin/starcluster'
+    url =  'https://price.adversary.us/scconfig'
+    master_name = 'i-967419b8'
+    args = (s_bin, url, master_name, cluster_name)
+    p = multiprocessing.Process(target=starclustercfg.run_sc, args=args)
+    p.start()
+    return jsonify({'master_name':master_name, 'cluster_name': cluster_name, 'pid':p.pid})
 
 @app.route('/scconfig/<master_name>/<cluster_name>')
 def scget_config(master_name, cluster_name):
@@ -164,13 +176,6 @@ def scget_config(master_name, cluster_name):
             render_template('sc-security-group.cfg')
     except SCConfigError as scce:
         return  jsonify({'error': scce.message})
-
-@app.route('/scconfig/<action>')
-def scconfig( template ):
-    if template == "genkey":
-        tcdirac.utils.starclustercfg.gen_key( session['user_data']['id'] )
-    if template == "base":
-        tcdirac.utils.starclustercfg.get_base( session['user_data']['id'] )
 
 def check_id():
     if 'user_data' in session and 'id' in session['user_data']:
