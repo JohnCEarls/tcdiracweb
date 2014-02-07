@@ -16,7 +16,7 @@ import boto.sqs
 from boto.sqs.message import Message
 import json
 import multiprocessing
-import subprocessh 
+import subprocess 
 
 class SCConfigError(Exception):
     pass
@@ -348,7 +348,7 @@ class AdversaryGPUServer(AdversaryServer):
 
 
 def run_sc( starcluster_bin, url, master_name,cluster_name ):
-    adv_ser = AdversaryServer(master_name, cluster_name)
+    adv_ser = AdversaryServer(master_name, cluster_name, no_create=True)
     pid = multiprocessing.current_process()
     base_message = {'cluster_name': cluster_name, 'master_name': master_name, 'pid':str(pid) }
         
