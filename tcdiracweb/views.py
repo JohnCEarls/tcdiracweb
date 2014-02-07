@@ -161,7 +161,8 @@ def create_cluster( cluster_name ):
     from tcdiracweb.utils import starclustercfg
     s_bin = '/home/sgeadmin/.local/bin/starcluster'
     url =  'https://price.adversary.us/scconfig'
-    master_name = 'i-967419b8'
+    instance_id =  boto.utils.get_instance_identity()['document']['instanceId']
+    master_name = instance_id 
     args = (s_bin, url, master_name, cluster_name)
     p = multiprocessing.Process(target=starclustercfg.run_sc, args=args)
     p.start()
