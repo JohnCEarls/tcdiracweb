@@ -147,23 +147,31 @@ $(function(){
           } else {
                 c += 'success"';
           }
-          c += '" id="' + cluster['cluster_name'] +'" ';
-          c += '>';
+          c+= '" id="' + cluster['cluster_name'] +'" ';
+          c+= '>';
           c+= '<td id="cluster_name">';
-          c += cluster['cluster_name'];
+          c+= cluster['cluster_name'];
           c+= '</td>';
-      c+= '<td id="cluster_type">';
+          c+= '<td id="cluster_type">';
           c+= cluster['cluster_type'];
           c+= '</td>';
-          c += '<td id="region">'
-          c += cluster['region'];
-          c +=  '<span class="badge">' + cluster['num_nodes'] + '</span>';
-          c += '</td>';
-      c += '<td><button id="' + cluster['cluster_name'] + '" class="btn';
-              c+= ' btn-default btn-sm" onclick="create_cluster(';
-             c += '\''+ cluster['cluster_name'] +'\')">Start</button></td>';
-          c+= '<td id="status-' + cluster['cluster_name'] + '" ></td>';
-          c += '</tr>';
+          c+= '<td id="region">'
+          c+= cluster['region'];
+          c+=  '<span class="badge">' + cluster['num_nodes'] + '</span>';
+          c+= '</td>';
+          c+= '<td><button id="' + cluster['cluster_name'] + '" class="btn';
+          c+= ' btn-default btn-sm" onclick="create_cluster(';
+          c+= '\''+ cluster['cluster_name'] +'\')">Start</button></td>';
+          c+= '<td id="status-' + cluster['cluster_name'] + '" >';
+          c+= '<textarea id="ssh-cmd-' + cluster['cluster_name'];
+          c+= '">';
+          c+= '~/.local/bin/starcluster -c ';
+          c+= 'https://price.adversary.us/scconfig/' + cluster['master_name'];
+          c+= '/' + cluster['cluster_name'];
+          c+= ' sshmaster -u sgeadmin ' + cluster['cluster_name'];
+          c+= '</textarea>';
+          c+= '</td>';
+          c+= '</tr>';
           console.log(c);
           return c;
       }
@@ -243,11 +251,30 @@ $(function(){
                  <th>Name</th>
                  <th>Type</th>
                  <th>Region</th> 
+                <th>Start Cluster</th>
+                <th>Scratch</th>
              </tr>
         </thead>
         <tbody id="cluster-body">
         </tbody>
      </table>
 </div>
-</div> <!-- row -->
+</div> 
+<script type="text/javascript">
+    function update_status(){
+            $('a#update-status').prop('disabled', true);
+            $.post("/sclogupdate", function( data ){
+                if(data['status'] == 'updates'){
+                   show_message( 'Info', data['clusters'].join() + ' have updates');
+                } else {
+                   show_message( 'Info', 'No updates');
+                }
+                $('update_status').prop('disabled', false);
+            });
+    }
+    $(
+        $('ul#page-specific-dd').append('<li><a href="#" id="update-status" onclick="update_status()">Update Status</a></li>')
+    );
+</script>
+<!-- row -->
 {% endblock %}

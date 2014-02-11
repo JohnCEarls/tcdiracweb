@@ -174,7 +174,7 @@ def scget_config(master_name, cluster_name):
     except SCConfigError as scce:
         return  jsonify({'error': scce.message})
 
-@app.route('/sclogupdate')
+@app.route('/sclogupdate', methods=['POST'])
 def sc_log_update():
     from tcdiracweb.utils import starclustercfg
     runs = starclustercfg.log_sc_startup()
