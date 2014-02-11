@@ -1,12 +1,14 @@
 import starcluster
 import boto
 import boto.ec2
+from boto.s3.key import Key
 import os, os.path
 from datetime import datetime
 import ConfigParser
 from pynamodb.models import Model
 from pynamodb.attributes import (UnicodeAttribute, UTCDateTimeAttribute,
         NumberAttribute, UnicodeSetAttribute, JSONAttribute)
+from pynamodb.exceptions import DoesNotExist
 import StringIO
 from flask import render_template
 from tcdiracweb import app
@@ -17,7 +19,7 @@ from boto.sqs.message import Message
 import json
 import multiprocessing
 import subprocess 
-
+from collections import defaultdict
 class SCConfigError(Exception):
     pass
 
@@ -44,6 +46,8 @@ class StarclusterConfig(Model):
     active = NumberAttribute(default=0)
     ready = NumberAttribute(default=0)
     config = UnicodeAttribute(default='')
+    startup_log = UnicodeAttribute(default='')
+    startup_pid = UnicodeAttribute(default='')
 
 
 class AdversaryMasterServer:
@@ -259,7 +263,6 @@ class AdversaryMasterServer:
         ads = AdversaryDataServer( self._model.master_name, cluster_name, region )
         ads.set_config( config_str )
 
-
     def configure_gpu_cluster( self, **kwargs):
         if kwargs is None:
             kwargs = {}
@@ -284,18 +287,21 @@ class AdversaryMasterServer:
         ads = AdversaryGPUServer( self._model.master_name, cluster_name, region )
         ads.set_config( config_str )
 
-
 class AdversaryServer:
     def __init__(self, master_name, cluster_name, region=None, no_create=False):
         if not StarclusterConfig.exists():
             StarclusterConfig.create_table( read_capacity_units=2, write_capacity_units=1, wait=True)
-        sc_config = StarclusterConfig.get( master_name, cluster_name )
+        try:
+            sc_config = StarclusterConfig.get( master_name, cluster_name )
+        except:
+            sc_config = None
         if sc_config:
             self._model = sc_config
         elif no_create:
             raise SCConfigError("%s, %s does not exist" % (master_name, cluster_name))
         else:
             self._model = self._create_model( master_name, cluster_name, region )
+        self.log_bucket = 'ndp-adversary'
 
     def _create_model(self, master_name, cluster_name, region):
         sc_model = StarclusterConfig( master_name, cluster_name )
@@ -309,9 +315,9 @@ class AdversaryServer:
         self._model.config = config
         self._model.save()
 
-    def set_active(self, active):
+    def set_active(self):
         self._model.refresh()
-        self._model.active = 1 if active else 0
+        self._model.active = 1
         self._model.save()
 
     @property
@@ -327,6 +333,49 @@ class AdversaryServer:
     def start_cluster(self):
         self._model.refresh()
 
+    @property
+    def startup_log(self):
+        self._model.refresh()
+        s3 = boto.connect_s3()
+        b = s3.get_bucket(self.log_bucket)
+        k =  b.get_key(self._model.startup_log)
+        if k:
+            return k.get_contents_as_string()
+        else:
+            return ''
+
+    def set_startup_log(self, log):
+        s3_name = 'logs/sc_startup/%s/%s.log' %(self._model.master_name, 
+                self._model.cluster_name )
+        self._model.startup_log = s3_name
+        #note:race conditions possible
+        s3 = boto.connect_s3()
+        b = s3.get_bucket(self.log_bucket)
+        k = Key(b)
+        k.key = s3_name
+        k.set_contents_from_string( log )
+        self._model.save()
+
+
+    @property
+    def startup_pid(self):
+        self._model.refresh()
+        return self._model.startup_pid
+
+    @property
+    def ready(self):
+        self._model.refresh()
+        return self._model.ready
+
+    def set_ready(self):
+        self._model.refresh()
+        self._model.ready = 1
+        self._model.save()
+
+    def set_startup_pid(self, startup_pid):
+        self._model.refresh()
+        self._model.startup_pid = startup_pid
+        self._model.save()
 
 class AdversaryDataServer(AdversaryServer):
     def _create_model(self, master_name, cluster_name, region):
@@ -358,18 +407,27 @@ def run_sc( starcluster_bin, url, master_name,cluster_name ):
         base_message['type'] = 'system'
         base_message['msg'] = 'Error: already active'
         q.write( Message(body=json.dumps(message)) )
+        return
+
     sc_command = "%s -c %s/%s/%s start -c %s %s" %( os.path.expanduser(starcluster_bin), url,master_name, cluster_name, cluster_name, cluster_name)
     sc_p = subprocess.Popen( sc_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True )
+    adv_ser.set_active()
+    adv_ser.set_startup_pid(str(sc_p.pid))
     stdout = []
     stderr = []
     errors = False
+    ctr = 0
     while True:
+        ctr += 1
         reads = [sc_p.stdout.fileno(), sc_p.stderr.fileno()]
         ret = select.select(reads, [], [])
         for fd in ret[0]:
+            base_message['time'] = datetime.now().isoformat()
+            base_message['count'] = ctr
             if fd == sc_p.stdout.fileno():
                 read = sc_p.stdout.readline()
                 base_message['type'] ='stdout'
+                base_message['time'] = datetime.now().isoformat()
                 base_message['msg'] = read.strip()
                 q.write(Message(body=json.dumps(base_message)))
             if fd == sc_p.stderr.fileno():
@@ -382,13 +440,50 @@ def run_sc( starcluster_bin, url, master_name,cluster_name ):
             base_message['msg'] = 'Complete'
             if errors:
                 base_message['msg'] += ':Errors exist'
+
+            q.write(Message(body=json.dumps(base_message)))
             break
+
+def log_sc_startup( ):
+    sqs =boto.sqs.connect_to_region("us-east-1")
+    q = sqs.create_queue('starcluster-results')
+    msg = q.read(120)
+    msg_comb = defaultdict(list)
+    err = ''
+    while msg:
+        mymsg = json.loads(msg.get_body())
+        q.delete_message( msg )
+        mymsg_key = mymsg['cluster_name'] + '-' + mymsg['master_name']
+        msg_comb[mymsg_key].append(mymsg)
+        msg = q.read(120)
+    for key, msg_list in msg_comb.iteritems():
+        first = msg_list[0]
+        msg_list.sort(key=lambda x: x['count'])
+        adv_ser = AdversaryServer(first['master_name'], first['cluster_name'], no_create=True)
+        log = adv_ser.startup_log 
+        for msg in msg_list:
+            if 'time' not in msg:
+                msg['time'] = datetime.now().isoformat()
+            if msg['type'] == 'stdout':
+                log += '[%s] %s\n' % (msg['time'], msg['msg'])
+            if False and msg['type'] == 'stderr':
+                if msg['msg'][:3] == '>>>':
+                    log += msg['msg'] + '\n'
+            if msg['type'] == 'system':
+                if msg['msg'][:8] == 'Complete':
+                    log += '=' * 60 + '\n'
+                    log += '[%s] %s\n' % (msg['time'], msg['msg'])
+                    adv_ser.set_ready()
+        adv_ser.set_startup_log( log )
+    return msg_comb.keys() 
 
 if __name__ == "__main__":
     if not AdversaryMaster.exists():
         AdversaryMaster.create_table( read_capacity_units=2, write_capacity_units=1, wait=True)
     if not StarclusterConfig.exists():
         StarclusterConfig.create_table( read_capacity_units=2, write_capacity_units=1, wait=True)
+    print log_sc_startup()
+    exit()
     ams = AdversaryMasterServer()
     #print ams.get_key('us-east-1')
     print ams.configure_data_cluster()
