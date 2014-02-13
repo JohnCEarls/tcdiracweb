@@ -148,7 +148,7 @@ class AdversaryMasterServer:
             region='us-east-1',
             cluster_size=10,
             cluster_shell='bash',
-            node_image_id='ami-9b0924f2',
+            node_image_id='ami-0773776e',
             node_instance_type='m1.xlarge',
             iam_profile='gpu-data-instance',
             dns_prefix=True,
