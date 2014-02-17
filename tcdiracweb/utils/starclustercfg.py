@@ -410,9 +410,12 @@ def run_sc( starcluster_bin, url, master_name,cluster_name ):
         return
 
     sc_command = "%s -c %s/%s/%s start -c %s %s" %( os.path.expanduser(starcluster_bin), url,master_name, cluster_name, cluster_name, cluster_name)
+    base_message['command'] = sc_command
     sc_p = subprocess.Popen( sc_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True )
     adv_ser.set_active()
     adv_ser.set_startup_pid(str(sc_p.pid))
+    log_subprocess_messages( sc_p, q, base_message)
+    """
     stdout = []
     stderr = []
     errors = False
@@ -441,6 +444,153 @@ def run_sc( starcluster_bin, url, master_name,cluster_name ):
             if errors:
                 base_message['msg'] += ':Errors exist'
 
+            q.write(Message(body=json.dumps(base_message)))
+            break"""
+
+def gpu_logserver_daemon(starcluster_bin, url, master_name, cluster_name, action='start'):
+    valid_actions = ['start', 'stop', 'status']
+    assert action in valid_actions. "%s is not a valid action for gpu" % action
+
+    base_message = {'cluster_name': cluster_name, 'master_name': master_name, 'action': action, 'component': 'gpu-logserver-daemon' }
+    sqs =boto.sqs.connect_to_region("us-east-1")
+    q = sqs.create_queue('starcluster-results')
+    sc_command = "%s -c %s/%s/%s sshmaster -u sgeadmin %s " %( os.path.expanduser(starcluster_bin), url,master_name, cluster_name, cluster_name)
+    if action == 'start':
+        sc_command += "'bash /home/sgeadmin/GPUDirac/scripts/logserver.sh start'"
+    if action == 'status':
+        sc_command += "'bash /home/sgeadmin/GPUDirac/scripts/logserver.sh status'" 
+    if action == 'stop':
+        sc_command += "'bash /home/sgeadmin/GPUDirac/scripts/logserver.sh stop'"
+    base_message['command'] = sc_command
+    sc_p = subprocess.Popen( sc_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True )
+    log_subprocess_messages( sc_p, q, base_message)
+    """
+    stdout = []
+    stderr = []
+    errors = False
+    ctr = 0
+    while True:
+        ctr += 1
+        reads = [sc_p.stdout.fileno(), sc_p.stderr.fileno()]
+        ret = select.select(reads, [], [])
+        for fd in ret[0]:
+            base_message['time'] = datetime.now().isoformat()
+            base_message['count'] = ctr
+            if fd == sc_p.stdout.fileno():
+                read = sc_p.stdout.readline()
+                base_message['type'] ='stdout'
+                base_message['time'] = datetime.now().isoformat()
+                base_message['msg'] = read.strip()
+                q.write(Message(body=json.dumps(base_message)))
+            if fd == sc_p.stderr.fileno():
+                read = sc_p.stderr.readline()
+                base_message['type'] ='stderr'
+                base_message['msg'] = read.strip()
+                q.write(Message(body=json.dumps(base_message)))
+        if sc_p.poll() != None:
+            base_message['type'] = 'system'
+            base_message['msg'] = 'Complete'
+            if errors:
+                base_message['msg'] += ':Errors exist'
+            q.write(Message(body=json.dumps(base_message)))
+            break"""
+
+def gpu_daemon( starcluster_bin, url, master_name, cluster_name, gpu_id=0, action='start'):
+    valid_actions = ['start', 'stop', 'status']
+    assert action in valid_actions. "%s is not a valid action for gpu" % action
+
+    base_message = {'cluster_name': cluster_name, 'master_name': master_name, 
+            'gpu_id':str(gpu_id), 'action':action, 'component':'gpuserver-daemon' }
+        
+    sqs =boto.sqs.connect_to_region("us-east-1")
+    q = sqs.create_queue('starcluster-results')
+    sc_command = "%s -c %s/%s/%s sshmaster -u sgeadmin %s " %( os.path.expanduser(starcluster_bin), url,master_name, cluster_name, cluster_name)
+    if action == 'start':
+        sc_command += "'bash /home/sgeadmin/GPUDirac/scripts/gpuserver%i.sh start'" % gpu_id
+    if action == 'status':
+        sc_command += "'bash /home/sgeadmin/GPUDirac/scripts/gpuserver%i.sh status'" % gpu_id
+    if action == 'stop':
+        sc_command += "'bash /home/sgeadmin/GPUDirac/scripts/gpuserver%i.sh stop'" % gpu_id
+    base_message['command'] = sc_command
+    sc_p = subprocess.Popen( sc_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True )
+    log_subprocess_messages( sc_p, q, base_message)
+    """
+    stdout = []
+    stderr = []
+    errors = False
+    ctr = 0
+    while True:
+        ctr += 1
+        reads = [sc_p.stdout.fileno(), sc_p.stderr.fileno()]
+        ret = select.select(reads, [], [])
+        for fd in ret[0]:
+            base_message['time'] = datetime.now().isoformat()
+            base_message['count'] = ctr
+            if fd == sc_p.stdout.fileno():
+                read = sc_p.stdout.readline()
+                base_message['type'] ='stdout'
+                base_message['time'] = datetime.now().isoformat()
+                base_message['msg'] = read.strip()
+                q.write(Message(body=json.dumps(base_message)))
+            if fd == sc_p.stderr.fileno():
+                read = sc_p.stderr.readline()
+                base_message['type'] ='stderr'
+                base_message['msg'] = read.strip()
+                q.write(Message(body=json.dumps(base_message)))
+        if sc_p.poll() != None:
+            ctr += 1
+            base_message['time'] = datetime.now().isoformat()
+            base_message['count'] = ctr
+            base_message['type'] = 'system'
+            base_message['msg'] = 'Complete'
+            if errors:
+                base_message['msg'] += ':Errors exist'
+            q.write(Message(body=json.dumps(base_message)))
+            break"""
+
+
+def cluster_restart( starcluster_bin, url, master_name, cluster_name):
+    base_message = {'cluster_name': cluster_name, 'master_name': master_name, 
+            'component':'restart'} 
+    sqs =boto.sqs.connect_to_region("us-east-1")
+    q = sqs.create_queue('starcluster-results')
+    sc_command = "%s -c %s/%s/%s restart %s " %( os.path.expanduser(starcluster_bin), url,master_name, cluster_name, cluster_name)
+    base_message['command'] = sc_command
+    sc_p = subprocess.Popen( sc_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True )
+    log_subprocess_messages( sc_p, q, base_message)
+
+def log_subprocess_messages( sc_p, q, base_message):
+    stdout = []
+    stderr = []
+    errors = False
+    ctr = 0
+    while True:
+        ctr += 1
+        reads = [sc_p.stdout.fileno(), sc_p.stderr.fileno()]
+        ret = select.select(reads, [], [])
+        for fd in ret[0]:
+            base_message['time'] = datetime.now().isoformat()
+            base_message['count'] = ctr
+            if fd == sc_p.stdout.fileno():
+                read = sc_p.stdout.readline()
+                base_message['type'] ='stdout'
+                base_message['time'] = datetime.now().isoformat()
+                base_message['msg'] = read.strip()
+                q.write(Message(body=json.dumps(base_message)))
+            if fd == sc_p.stderr.fileno():
+                read = sc_p.stderr.readline()
+                base_message['type'] ='stderr'
+                base_message['msg'] = read.strip()
+                q.write(Message(body=json.dumps(base_message)))
+        if sc_p.poll() != None:
+            #process exitted
+            ctr += 1
+            base_message['time'] = datetime.now().isoformat()
+            base_message['count'] = ctr
+            base_message['type'] = 'system'
+            base_message['msg'] = 'Complete'
+            if errors:
+                base_message['msg'] += ':Errors exist'
             q.write(Message(body=json.dumps(base_message)))
             break
 

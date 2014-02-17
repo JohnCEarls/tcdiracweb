@@ -1,0 +1,28 @@
+<script type="text/template" id="cluster-form">
+<form role="form" id="cluster_config">
+    <label for="cluster_type">Cluster Type</label>
+    <select  class="form-control" name="cluster_type" id="cluster_type">
+        <option value="data" selected>Data Cluster</option>
+        <option value="gpu">GPU Cluster</option>
+    </select>
+    <label for="cluster_prefix">Cluster prefix 
+        <span  class="default-value" id="default-cluster_prefix"></span>
+    </label>
+    <input type="text" class="form-control" id="cluster_prefix"
+    name="cluster_prefix" placeholder="Prefix for cluster name">
+    <label for="spot_bid">Choose spot bid price <span class="default-value" id="default-spot_bid"></span></label>
+    <input type="text" class="form-control" name="spot_bid" id="spot_bid" placeholder="Spot Bid">
+    <label for="region">Choose region<span id="default"></span></label>
+    <select  class="form-control" name="region" id="region">
+        <option>us-east-1</option>
+        <option>us-west-1</option>
+        <option>us-west-2</option>
+    </select>
+    <label>
+    <input type="checkbox" name="force_spot_master" id="force_spot_master"/> Make cluster master a spot instance
+    </label>
+    <button type="button" id="config-button"class="btn btn-default">Configure new cluster</button>
+    
+    
+</form>
+</script>

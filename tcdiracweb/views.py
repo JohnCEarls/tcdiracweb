@@ -2,7 +2,8 @@ from tcdiracweb import app
 import tcdiracweb.utils.app_init
 import tcdiracweb.utils.user_management as u_man
 import logging
-from flask import Flask, redirect, url_for, session, request, jsonify, render_template, flash
+from flask import Flask, redirect, url_for, session, request, jsonify, \
+        render_template, flash, abort
 from functools import wraps
 from werkzeug.security import generate_password_hash, \
              check_password_hash
@@ -129,7 +130,8 @@ def clustermain():
     instance_id =  boto.utils.get_instance_identity()['document']['instanceId']
     return render_template('clustermain.html', instance_id=instance_id)
 
-@app.route('/createcluster', methods=['POST','GET'])
+@app.route('/createclusterconfig', methods=['POST','GET'])
+@secure_page
 def scgenerate_config():
     app.logger.debug(repr(request))
     from tcdiracweb.utils.starclustercfg import AdversaryMasterServer
@@ -153,6 +155,7 @@ def scgenerate_config():
         return jsonify({'info':'Config generation complete'});
 
 @app.route('/createcluster/<cluster_name>')
+@secure_page
 def create_cluster( cluster_name ):
     from tcdiracweb.utils import starclustercfg
     s_bin = '/home/sgeadmin/.local/bin/starcluster'
@@ -163,6 +166,50 @@ def create_cluster( cluster_name ):
     p = multiprocessing.Process(target=starclustercfg.run_sc, args=args)
     p.start()
     return jsonify({'master_name':master_name, 'cluster_name': cluster_name, 'pid':p.pid})
+
+@app.route('/gpucluster/<cluster_name>', methods=['POST'])
+@secure_page
+def gpu_cluster( cluster_name ):
+    from tcdiracweb.utils import starclustercfg
+    s_bin = '/home/sgeadmin/.local/bin/starcluster'
+    url =  'https://price.adversary.us/scconfig'
+    instance_id =  boto.utils.get_instance_identity()['document']['instanceId']
+    master_name = instance_id 
+    valid_actions = ['start', 'stop', 'status']
+    if request.method == 'POST':
+        if request.form['component'] == 'logserver-daemon':
+            if request.form['action'] in valid_actions:
+                args = (s_bin, url, master_name, cluster_name, 
+                        request.form['action'])
+                p = multiprocessing.Process(
+                        target=starclustercfg.gpu_logserver_daemon, 
+                        args=args)
+                p.start()
+            else:
+                abort(400)
+
+        elif request.form['component'] == 'gpuserver-daemon':
+            gid = int(request.form['gpu-id'])
+            if request.form['action'] in valid_actions and gid in (0,1):
+                args = (s_bin, url, master_name, cluster_name, gid, request.form['action'])
+                p = multiprocessing.Process(
+                        target=starclustercfg.gpu_daemon, 
+                        args=args)
+                p.start()
+            else:
+                abort(400)
+        elif request.form['component'] == 'restart':
+            args = (s_bin, url, master_name, cluster_name)
+                p = multiprocessing.Process(
+                        target=starclustercfg.cluster_restart, 
+                        args=args)
+                p.start()
+        else:
+            abort(400)
+
+        return jsonify({'master_name':master_name, 'cluster_name': cluster_name, 'pid':p.pid})
+    else:
+        abort(400)
 
 @app.route('/scconfig/<master_name>/<cluster_name>')
 def scget_config(master_name, cluster_name):

@@ -18,9 +18,22 @@ function add_cluster( cluster ){
   c+= cluster['region'];
   c+=  '<span class="badge">' + cluster['num_nodes'] + '</span>';
   c+= '</td>';
-  c+= '<td><button id="' + cluster['cluster_name'] + '" class="btn';
-  c+= ' btn-default btn-sm" onclick="create_cluster(';
-  c+= '\''+ cluster['cluster_name'] +'\')">Start</button></td>';
+  c+= '<td>';
+  c+= '<div class="btn-group btn-group-xs">';
+  c+= '<div class="btn-group">';
+  c+= '<button type="button" class="btn btn-default dropdown-toggle"';
+  c+= ' data-toggle="dropdown">';
+  c+= 'Cluster Management <span class="caret"></span></button>';
+  c+= '<ul class="dropdown-menu" id="cluster-management">';
+  c+= '</ul>';
+  c+= '<div class="btn-group">';
+  c+= '<button type="button" class="btn btn-default dropdown-toggle"';
+  c+= ' data-toggle="dropdown">';
+  c+= 'Server Management <span class="caret"></span></button>';
+  c+= '<ul class="dropdown-menu" id="server-management">';
+  c+= '</ul>';
+  c+= '</div>'
+  c+= '</td>';
   c+= '<td id="status-' + cluster['cluster_name'] + '" >';
   c+= '<textarea id="ssh-cmd-' + cluster['cluster_name'];
   c+= '">';
@@ -43,6 +56,67 @@ function add_cluster( cluster ){
   c+= "<td colspan='7'><textarea class='logs' name='" + cluster['cluster_name'] + '-logs';
   c+= "'></textarea></td></tr>";
   return c;
+}
+/**
+  //---------------------------------------------------------------
+  c+= '<button id="' + cluster['cluster_name'] + '-launch" class="btn';
+  c+= ' btn-default" onclick="create_cluster(';
+  c+= '\''+ cluster['cluster_name'] +'\')">Launch</button>';
+  //---------------------------------------------------------------
+  //---------------------------------------------------------------
+  c+= '<button id="' + cluster['cluster_name'] + '-rs" class="btn';
+  c+= ' btn-default" onclick="restart_cluster(';
+  c+= '\''+ cluster['cluster_name'] +'\')">Restart</button>';
+  //---------------------------------------------------------------
+  if( cluster['type'] == 'gpu' ){
+      //---------------------------------------------------------------
+      c+= '<button id="' + cluster['cluster_name'] + '-ls" class="btn';
+      c+= ' btn-default " onclick="gpu_logserver(';
+      c+= '\''+ cluster['cluster_name'] +'\')">Logserver</button>';
+      //---------------------------------------------------------------
+      //---------------------------------------------------------------
+      c+= '<button id="' + cluster['cluster_name'] + '-gpu0" class="btn';
+      c+= ' btn-default" onclick="'
+      c+= 'gpu_server(';
+      c+= '\''+ cluster['cluster_name'] +'\',';
+      c+= ', \'start\' , 0 )';
+      c+= '">GPU0 start</button>';
+      //---------------------------------------------------------------
+      //---------------------------------------------------------------
+      c+= '<button id="' + cluster['cluster_name'] + '-gpu1" class="btn';
+      c+= ' btn-default" onclick="gpu_server_start(';
+      c+= '\''+ cluster['cluster_name'] +'\')">GPU1 start</button>';
+      //---------------------------------------------------------------
+  }
+  c+= '</div>
+**/
+
+function add_cluster_management( cluster_name ){
+    cm_dd = $('tr#' + cluster_name + ' ul#cluster-management');
+    buttonInfo = [
+    { text:'Launch',
+      id: cluster_name + '-launch',
+      onclick:function(){
+
+      }
+    },
+    { text:'Restart' },
+    { text:'terminate' }
+    ];
+    if (cm_dd){
+        cm_dd[0].append('<li></li>');
+    }
+}
+function gpu_server_start_button( cluster_name, gpu_id){
+  console.log('none'); 
+}
+
+function restart_cluster( cluster_name ){
+ console.log('none');
+}
+
+function gpu_server( cluster_name, action, gpu_id ){
+ console.log('none');
 }
 
 function toggleLog( cname ){
@@ -88,8 +162,9 @@ function set_cluster_default( type ){
    $('select#region').empty();
    reg.forEach(function(arg){$('select#region').append( '<option>' + arg + '</option>' );});
 }
+scan_results = [];
+function get_clusters(){
 
-function get_table(){
     var dynamodb = new AWS.DynamoDB();
     var adversary_atts = ['master_name', 'cluster_name', 'num_nodes', 
     'cluster_type','region', 'active'];
@@ -101,35 +176,47 @@ function get_table(){
                         }
                     },
     };
-    var scan_results = []
+    var scan_results = [];
     dynamodb.scan(params, function (err, data) {
-    if (err) {
-      if (err.statusCode != '200'){
-       show_message( 'Error', '(' + err.statusCode + ': AWS)'+
-       err.message )
-    }
-       console.log(err); // an error occurred
-    } else {
-    console.log(data); // successful response
-    items = data.Items;
-    items.forEach( function( item ){ 
-      cluster = Object();
-      adversary_atts.forEach( function(att){
-          try{
-              var my_att = '';
-              if (item[att].N){
-                  my_att = item[att].N;
-              } else if (item[att].S ){
-                  my_att = item[att].S;
-              }
-              cluster[att] = my_att;
-              console.log( my_att );
-              } catch(err) {
-                console.log(err);
-            }
+        if (err) {
+          if (err.statusCode != '200'){
+           show_message( 'Error', '(' + err.statusCode + ': AWS)'+
+           err.message )
+        }
+           console.log(err); // an error occurred
+        } else {
+        console.log(data); // successful response
+        items = data.Items;
+        items.forEach( function( item ){ 
+          cluster = Object();
+          adversary_atts.forEach( function(att){
+              try{
+                    var my_att = '';
+                    if (item[att].N){
+                      my_att = item[att].N;
+                    } else if (item[att].S ){
+                      my_att = item[att].S;
+                    }
+                    cluster[att] = my_att;
+                  //console.log( my_att );
+                  } catch(err) {
+                    console.log("error in get_resulst:" +err);
+                  }
+            });
+            scan_results.push(cluster);
         });
-        scan_results.push(cluster);
+
+        clustersa = new ClustersModel(scan_results );
+        ClusterViewTable = new ClustersView({ collection: clustersa });
+        ClusterViewTable.render();
+        }
     });
+    return scan_results;
+}
+
+
+function get_table(){
+    scan_results = get_clusters();
     if (scan_results.length > 0){
         scan_results.forEach(function(cluster){
             $('table#cluster-table tbody').append(add_cluster(cluster));
@@ -145,15 +232,11 @@ function get_table(){
     $("#cluster-table").tablesorter();
 
 
-toHide = $('tr.log-row');
-for(var i=0;i<toHide.length;i++){
-  
-  toHide[i].hidden = true;
-}
+    toHide = $('tr.log-row');
+    for(var i=0;i<toHide.length;i++){
+        toHide[i].hidden = true;
     }
-    });
 }
-
 function create_cluster( cluster_name ){
     $.get("/createcluster/" + cluster_name, function( data ){
         $('button#'+cluster_name).prop('disabled', true);

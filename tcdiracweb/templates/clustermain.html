@@ -1,6 +1,7 @@
 {%extends 'layout.html' %}
 {% block title %} Cluster management {% endblock %}
 {% block content %}
+{% include 'clustermain-us-templates.html' %}
 <script type="text/javascript">
 AWS.config.credentials = new AWS.WebIdentityCredentials({
         RoleArn: "arn:aws:iam::315557446885:role/tcdiracwebRoleGoogle",
@@ -30,39 +31,70 @@ g_scgenerate_url = '{{ url_for('scgenerate_config') }}';
     textarea.logs {
         width:100%;
     }
+    tr.clusterRow {
+        width:100%;
+    }
+    td.cluster_name {
+        font-style:bold;
+    }
 </style>
+<script type="text/template" id="template-cluster">
+    <td id="cluster_name" class="cluster_name">
+        <%= cluster_name %>
+    </td>
+    <td id="region" class="region">
+        <%= region %>
+    </td>
+    <td id="num_nodes" class="num_nodes">
+        <span class="badge"><%= num_nodes %></span>
+    </td>
+    <td id="cluster_management" class="cluster_management">
+        <div class="btn-group">
+        <button type="button" class="btn btn-default dropdown-toggle" 
+            data-toggle="dropdown">
+  Cluster Management <span class="caret"></span></button>
+        <ul class="dropdown-menu" id="cluster-management" role="menu">
+            <li class="launch"><a href="#">Launch</a></li>
+            <li class="restart"><a href="#">Restart</a></li>
+            <li class="terminate"><a href="#">Terminate</a></li>
+        </ul>
+        </div>
+    </td>
+    <td id="cluster_management" class="server_management">
+        <div class="btn-group">
+        <button type="button" class="btn btn-default dropdown-toggle" 
+            data-toggle="dropdown">
+        Server Management <span class="caret"></span></button>
+        <ul class="dropdown-menu" id="server-management" role="menu">
+            <li class="start-logger"><a href="#">Start Logger</a></li>
+                <li class="start-gpu0"><a href="#">Start GPU0</a></li>
+                <li class="start-gpu1"><a href="#">Start GPU1</a></li>
+        </ul>
+    </div>
+    </td>
+</script>
 <div class="row">
     <div class="col-md-12 page-header">
         <h1>Cluster management console</h1>
     </div>
 </div>
 <div class="row">
-    <div class="col-md-4">
-    <form role="form" id="cluster_config">
-        <label for="cluster_type">Cluster Type</label>
-        <select  class="form-control" name="cluster_type" id="cluster_type">
-            <option value="data" selected>Data Cluster</option>
-            <option value="gpu">GPU Cluster</option>
-        </select>
-        <label for="cluster_prefix">Cluster prefix <span  class="default-value" id="default-cluster_prefix"></span></label>
-        <input type="text" class="form-control" id="cluster_prefix"
-        name="cluster_prefix" placeholder="Prefix for cluster name">
-        <label for="spot_bid">Choose spot bid price <span class="default-value" id="default-spot_bid"></span></label>
-        <input type="text" class="form-control" name="spot_bid" id="spot_bid" placeholder="Spot Bid">
-        <label for="region">Choose region<span id="default"></span></label>
-        <select  class="form-control" name="region" id="region">
-            <option>us-east-1</option>
-            <option>us-west-1</option>
-            <option>us-west-2</option>
-        </select>
-        <label>
-        <input type="checkbox" name="force_spot_master" id="force_spot_master"/> Make cluster master a spot instance
-        </label>
-        <button type="button" id="config-button"class="btn btn-default">Configure new cluster</button>
+<div class="col-md-4" id="cluster-form-container">
         
-        
-    </form>
 </div>
+<script type="text/javascript">
+    ClusterFormView = Backbone.View.extend({
+        initialize : function(){
+            this.render();
+        },
+        render : function(){
+            var template = _.template($('#cluster-form').html(), {});
+            this.$el.html( template )
+        }
+    });
+    var cluster_form = new ClusterFormView({ el: $('div#cluster-form-container') });
+
+</script>
 <div class="panel panel-default col-md-8">
      <div class="panel-heading">Clusters</div>
      <table id="cluster-table" class="tablesorter table-hover" width=100%>
@@ -82,4 +114,91 @@ g_scgenerate_url = '{{ url_for('scgenerate_config') }}';
 </div>
 </div> 
 <!-- row -->
+<div class="panel panel-default col-md-8">
+<table id="container-clustersview">
+</table>
+</div>
+
+<script type="text/javascript">
+    var ClusterModel = Backbone.Model.extend({
+launch : function(){
+    console.log(this.get('cluster_name') + ' launch');
+},
+terminate :function(){
+    console.log(this.get('cluster_name') + ' terminate');
+},
+restart : function(){
+    console.log( this.get('cluster_name') + ' restart');
+}
+
+            });
+
+    var ClustersModel = Backbone.Collection.extend({
+        model: ClusterModel
+     });
+
+    var ClustersView = Backbone.View.extend({
+            type: "ClustersView",
+            el: "#container-clustersview",
+            initialize: function (){
+            },
+            render : function(){
+                _.each(this.collection.models, this.processCluster, this);
+                return this;
+            },
+            processCluster : function(cluster ){
+                var clusterView = new ClusterView({ model: cluster });
+                clusterView.render();
+                this.$el.append(clusterView.el);
+            }
+    });
+
+    var ClusterView = Backbone.View.extend({
+type : "ClusterView",
+template: _.template($('#template-cluster').html()),
+tagName: "tr",
+className: "clusterRow",
+
+initialize : function(){
+    this.model.on("change", this.clusterChanged, this);
+},
+
+clusterChanged: function( model, changes ){
+    console.log("clusterChanged:" + model.get("cluster_name"));
+},
+
+events : {
+'click .launch': 'launchCluster',
+'click .restart': 'restartCluster',
+'click .terminate': 'terminateCluster',
+},
+
+launchCluster: function(){
+this.model.launch();
+               },
+render: function () {
+  var outputHtml = this.template(this.model.toJSON());
+  this.$el.html(outputHtml);
+  return this;
+},                                                                         
+restartCluster: function(){
+    this.model.restart();
+                },
+terminateCluster: function(){
+    this.model.terminate();
+}                
+});
+
+/**
+c = get_clusters();
+if(! c.length){
+    c = scan_results;
+}
+
+clustersa = new ClustersModel(c );
+ClusterViewTable = new ClustersView({ collection: clustersa });
+ClusterViewTable.render();
+**/
+
+</script>
 {% endblock %}
