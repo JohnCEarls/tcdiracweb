@@ -449,9 +449,9 @@ def run_sc( starcluster_bin, url, master_name,cluster_name ):
 
 def gpu_logserver_daemon(starcluster_bin, url, master_name, cluster_name, action='start'):
     valid_actions = ['start', 'stop', 'status']
-    assert action in valid_actions. "%s is not a valid action for gpu" % action
-
-    base_message = {'cluster_name': cluster_name, 'master_name': master_name, 'action': action, 'component': 'gpu-logserver-daemon' }
+    assert action in valid_actions, "%s is not a valid action for gpu" % action
+    base_message = {'cluster_name': cluster_name, 'master_name': master_name, 
+            'action': action, 'component': 'gpu-logserver-daemon' }
     sqs =boto.sqs.connect_to_region("us-east-1")
     q = sqs.create_queue('starcluster-results')
     sc_command = "%s -c %s/%s/%s sshmaster -u sgeadmin %s " %( os.path.expanduser(starcluster_bin), url,master_name, cluster_name, cluster_name)
@@ -497,7 +497,7 @@ def gpu_logserver_daemon(starcluster_bin, url, master_name, cluster_name, action
 
 def gpu_daemon( starcluster_bin, url, master_name, cluster_name, gpu_id=0, action='start'):
     valid_actions = ['start', 'stop', 'status']
-    assert action in valid_actions. "%s is not a valid action for gpu" % action
+    assert action in valid_actions, "%s is not a valid action for gpu" % action
 
     base_message = {'cluster_name': cluster_name, 'master_name': master_name, 
             'gpu_id':str(gpu_id), 'action':action, 'component':'gpuserver-daemon' }

@@ -9,7 +9,7 @@ AWS.config.credentials = new AWS.WebIdentityCredentials({
 AWS.config.region = 'us-east-1';
 AWS.config.credentials.params.WebIdentityToken = "{{session['id_token']}}";
 AWS.config.sslEnabled = true;
-//globals
+
 g_instance_id = '{{ instance_id }}';
 g_scgenerate_url = '{{ url_for('scgenerate_config') }}';
 </script>
@@ -38,41 +38,6 @@ g_scgenerate_url = '{{ url_for('scgenerate_config') }}';
         font-style:bold;
     }
 </style>
-<script type="text/template" id="template-cluster">
-    <td id="cluster_name" class="cluster_name">
-        <%= cluster_name %>
-    </td>
-    <td id="region" class="region">
-        <%= region %>
-    </td>
-    <td id="num_nodes" class="num_nodes">
-        <span class="badge"><%= num_nodes %></span>
-    </td>
-    <td id="cluster_management" class="cluster_management">
-        <div class="btn-group">
-        <button type="button" class="btn btn-default dropdown-toggle" 
-            data-toggle="dropdown">
-  Cluster Management <span class="caret"></span></button>
-        <ul class="dropdown-menu" id="cluster-management" role="menu">
-            <li class="launch"><a href="#">Launch</a></li>
-            <li class="restart"><a href="#">Restart</a></li>
-            <li class="terminate"><a href="#">Terminate</a></li>
-        </ul>
-        </div>
-    </td>
-    <td id="cluster_management" class="server_management">
-        <div class="btn-group">
-        <button type="button" class="btn btn-default dropdown-toggle" 
-            data-toggle="dropdown">
-        Server Management <span class="caret"></span></button>
-        <ul class="dropdown-menu" id="server-management" role="menu">
-            <li class="start-logger"><a href="#">Start Logger</a></li>
-                <li class="start-gpu0"><a href="#">Start GPU0</a></li>
-                <li class="start-gpu1"><a href="#">Start GPU1</a></li>
-        </ul>
-    </div>
-    </td>
-</script>
 <div class="row">
     <div class="col-md-12 page-header">
         <h1>Cluster management console</h1>
@@ -80,7 +45,8 @@ g_scgenerate_url = '{{ url_for('scgenerate_config') }}';
 </div>
 <div class="row">
 <div class="col-md-4" id="cluster-form-container">
-        
+</div>
+<div class="panel panel-primary col-md-8" id="cluster-table-container">
 </div>
 <script type="text/javascript">
     ClusterFormView = Backbone.View.extend({
@@ -95,99 +61,202 @@ g_scgenerate_url = '{{ url_for('scgenerate_config') }}';
     var cluster_form = new ClusterFormView({ el: $('div#cluster-form-container') });
 
 </script>
-<div class="panel panel-default col-md-8">
-     <div class="panel-heading">Clusters</div>
-     <table id="cluster-table" class="tablesorter table-hover" width=100%>
-         <thead>
-             <tr>
-                 <th>Name</th>
-                 <th>Type</th>
-                 <th>Region</th> 
-                <th>Start Cluster</th>
-                <th>Scratch</th>
-                <th>Info</th>
-             </tr>
-        </thead>
-        <tbody id="cluster-body">
-        </tbody>
-     </table>
-</div>
-</div> 
-<!-- row -->
-<div class="panel panel-default col-md-8">
-<table id="container-clustersview">
-</table>
-</div>
-
 <script type="text/javascript">
-    var ClusterModel = Backbone.Model.extend({
-launch : function(){
+var ClusterModel = Backbone.Model.extend({
+  defaults : {'log':'None'},
+  url:'/cluster',
+  idAttribute: "cluster_name",
+  initialize : function(){
+    this._getLog();
+  },
+  launch : function(){
     console.log(this.get('cluster_name') + ' launch');
-},
-terminate :function(){
+  },
+  terminate :function(){
     console.log(this.get('cluster_name') + ' terminate');
-},
-restart : function(){
+  },
+  restart : function(){
     console.log( this.get('cluster_name') + ' restart');
-}
-
-            });
-
-    var ClustersModel = Backbone.Collection.extend({
-        model: ClusterModel
-     });
-
-    var ClustersView = Backbone.View.extend({
-            type: "ClustersView",
-            el: "#container-clustersview",
-            initialize: function (){
-            },
-            render : function(){
-                _.each(this.collection.models, this.processCluster, this);
-                return this;
-            },
-            processCluster : function(cluster ){
-                var clusterView = new ClusterView({ model: cluster });
-                clusterView.render();
-                this.$el.append(clusterView.el);
-            }
+  },
+  startLogger : function(){
+    if(this.isGPU()){
+    console.log( this.get('cluster_name')+' startLogger');
+    }
+  },
+  startGPU : function(gid){
+    if(this.isGPU()){
+      console.log( this.get('cluster_name') + ' startGPU' + gid );
+    }
+  },
+  startDataCluster: function(){
+    if(this.isData()){
+      console.log( this.get('cluster_name') + ' startDataCluster' );
+    }
+  },
+  isGPU : function(){
+    return this.get("cluster_type") == "gpu";
+  },
+  isData : function(){
+    return this.get("cluster_type") == "data";
+  },
+  _getLog : function(){
+    var that = this;
+    var s3 = new AWS.S3;
+    var configString = 'None';
+    var req = s3.getObject({Bucket:'ndp-adversary', 
+        Key: 'logs/sc_startup/' +  g_instance_id + '/' + that.get('cluster_name') + '.log'})
+    req.on('error', function(error, response){
+        if (error.name == "NoSuchKey"){ 
+            configString = 'No log for ' + that.get('cluster_name');
+        } else {
+            configString = error.message;
+        }
+        if (that.get('log') != configString){
+          that.set('log', configString)
+        }
     });
+    req.on('success', function(response){
+        testing_var = response;
+        console.log(response);
+        configString = response.data.Body.toString() + that.get('log');
+        that.set('log', remove_header(configString));
+    });
+    req.send();
+  },
+  refresh : function(){
+    this.fetch();
+    this._getLog();
+  }
 
-    var ClusterView = Backbone.View.extend({
-type : "ClusterView",
-template: _.template($('#template-cluster').html()),
-tagName: "tr",
-className: "clusterRow",
-
-initialize : function(){
-    this.model.on("change", this.clusterChanged, this);
-},
-
-clusterChanged: function( model, changes ){
-    console.log("clusterChanged:" + model.get("cluster_name"));
-},
-
-events : {
-'click .launch': 'launchCluster',
-'click .restart': 'restartCluster',
-'click .terminate': 'terminateCluster',
-},
-
-launchCluster: function(){
-this.model.launch();
-               },
-render: function () {
-  var outputHtml = this.template(this.model.toJSON());
-  this.$el.html(outputHtml);
-  return this;
-},                                                                         
-restartCluster: function(){
-    this.model.restart();
-                },
-terminateCluster: function(){
-    this.model.terminate();
-}                
 });
+
+var ClustersModel = Backbone.Collection.extend({
+  model: ClusterModel,
+  url: '/cluster'
+});
+
+var ClustersView = Backbone.View.extend({
+  type: "ClustersView",
+  template: _.template($('#template-clusters').html()),
+  el: "#cluster-table-container",
+  _rendered : false,
+  table_header: {
+    title : 'Cluster Management',
+    headers : ['Name', 'Region', 'Size', ' ', ' ', 'Log', ' ' ] 
+  },
+  initialize: function (){
+    this.render();
+    _.bindAll.apply(_, [this].concat(_.functions(this)))
+    this.collection.bind('add', this.processCluster);
+  },
+  render : function(){
+    if (!this._rendered){
+    this._rendered = true;
+    var outputHTML = this.template( this.table_header );
+    this.$el.append(outputHTML);
+    }
+    
+    return this;
+  },
+  load: function(){
+    this.collection.fetch({
+        add: true,
+        success: this.loadCompleteHandler,
+        error: this.errorHandler
+    });
+  },  
+  loadCompleteHandler: function(){
+                           //this.render();
+      console.log('loadCompleteHandler');                     
+  },
+  errorHandler : function(){
+    throw "error loading collection";
+  },
+
+  processCluster : function(cluster ){
+    if(!this._rendered){
+      this.render();
+    }
+    var myclusterView = new ClusterView({ model: cluster });
+    myclusterView.render();
+    console.log(cluster);
+    console.log("processCluster");
+    console.log(myclusterView);
+    this.$el.find('tbody#cluster-body').append(myclusterView.el);
+  }
+});
+
+var ClusterView = Backbone.View.extend({
+  type : "ClusterView",
+  template: _.template($('#template-cluster').html()),
+  tagName: "tr",
+  className: "clusterRow",
+  url: '/cluster',
+  initialize : function(){
+    this.model.on("change", this.clusterChanged, this);
+  },
+
+  clusterChanged: function( model, changes ){
+    console.log("clusterChanged:" + model.get("cluster_name"));
+    },
+  events : {
+    //cluster actions
+    'click .launch': 'launchCluster',
+    'click .restart': 'restartCluster',
+    'click .terminate': 'terminateCluster',
+    //server action
+    //gpu
+    'click .start-logger': 'startLogger',
+    'click .start-gpu0': 'startGPU0',
+    'click .start-gpu1': 'startGPU1',
+    //data server
+    'click .start-data-cluster': 'startDataCluster',
+
+    'click .glyphicon-info-sign': 'setLog',
+    'click  .glyphicon-refresh': 'refresh'
+  },
+
+  render: function () {
+    var outputHtml = this.template(this.model.toJSON());
+    this.$el.html(outputHtml);
+    return this;
+  },
+  launchCluster: function(){
+    this.model.launch();
+  },
+  restartCluster: function(){
+    this.model.restart();
+  },
+  terminateCluster: function(){
+    this.model.terminate();
+  },
+  startLogger: function(){
+    this.model.startLogger();
+  },
+  startGPU0: function(){
+    this.model.startGPU(0);
+  },
+  startGPU1: function(){
+    this.model.startGPU(1);
+  },
+  startDataCluster: function(){
+    this.model.startDataCluster()
+                    },
+  refresh : function(){
+    console.log("refreshing");
+    this.model.refresh();
+          },              
+  setLog : function(){
+    $('textarea.logs')[0].value = this.model.get('log');
+  }
+});
+
+$(function(){
+    cm = new ClustersModel();
+    clusterView = new ClustersView({ collection: cm} );
+    clusterView.load();
+});
+
 
 /**
 c = get_clusters();

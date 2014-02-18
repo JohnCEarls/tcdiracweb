@@ -163,13 +163,20 @@ function set_cluster_default( type ){
    reg.forEach(function(arg){$('select#region').append( '<option>' + arg + '</option>' );});
 }
 scan_results = [];
+temp = [];
+
+
+
+
 function get_clusters(){
 
     var dynamodb = new AWS.DynamoDB();
+    /**
     var adversary_atts = ['master_name', 'cluster_name', 'num_nodes', 
-    'cluster_type','region', 'active'];
+    'cluster_type','region', 'active'];**/
+
     params = {'TableName':'sc-adversary-config',
-      'AttributesToGet':adversary_atts,
+      'AttributesToGet':['cluster_name'],  //adversary_atts,
       'ScanFilter': {  "master_name":
                     {'AttributeValueList':[ {"S": g_instance_id  } ],
                             "ComparisonOperator": "EQ"
@@ -207,11 +214,40 @@ function get_clusters(){
         });
 
         clustersa = new ClustersModel(scan_results );
+        console.log(clustersa);
         ClusterViewTable = new ClustersView({ collection: clustersa });
+        console.log(ClusterViewTable);
         ClusterViewTable.render();
+        temp = ClusterViewTable;
         }
     });
     return scan_results;
+}
+
+function init_cluster(){
+    var dynamodb = new AWS.DynamoDB();
+    var adversary_atts = ['master_name', 'cluster_name', 'num_nodes', 
+    'cluster_type','region', 'active', ];
+    params = {'TableName':'sc-adversary-config',
+      'AttributesToGet':['cluster_name'],
+      'ScanFilter': { "master_name": {'AttributeValueList':[ {"S": g_instance_id  } ],"ComparisonOperator": "EQ" } }, };
+    request = dynamodb.scan( params );
+    request.send();
+    clustersModels = new ClustersModel();
+    request.on('success', function( response ){
+        console.log('success' + response);
+        console.log(response);
+        response.data.Items.forEach( function( item ){
+            cm = { id: item.cluster_name.S };
+            console.log(cm);
+            var cluster = ClusterModel( cm );
+            console.log(cluster);
+            clustersModels.collection.add(cluster);
+        });
+    });
+    request.on('error', function(error){console.log(error)});
+    request.on('complete', function(){console.log('complete')});
+
 }
 
 
@@ -310,17 +346,16 @@ $('button#config-button').click( function(event){
         console.log(data);
         if (data['error']){
             show_message('Error',data['error']);
-            } else {
+        } else {
             show_message('Info', data['info']);
-            $('tbody#cluster-body').empty();
-            get_table();
         }
     });
 })
-get_table();
-$("#cluster-table").tablesorter();
+//get_clusters();
+//get_table();
+//$("#cluster-table").tablesorter();
 //context specific functions
-$('ul#page-specific-dd').append('<li><a href="#" id="update-status" onclick="update_status()">Update Status</a></li>')
+//$('ul#page-specific-dd').append('<li><a href="#" id="update-status" onclick="update_status()">Update Status</a></li>')
 
 
   set_cluster_default($('#cluster_type option:selected').val());

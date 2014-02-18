@@ -9,20 +9,93 @@
         <span  class="default-value" id="default-cluster_prefix"></span>
     </label>
     <input type="text" class="form-control" id="cluster_prefix"
-    name="cluster_prefix" placeholder="Prefix for cluster name">
-    <label for="spot_bid">Choose spot bid price <span class="default-value" id="default-spot_bid"></span></label>
+        name="cluster_prefix" placeholder="Prefix for cluster name">
+    <label for="spot_bid">Choose spot bid price
+        <span class="default-value" id="default-spot_bid"></span>
+    </label>
     <input type="text" class="form-control" name="spot_bid" id="spot_bid" placeholder="Spot Bid">
-    <label for="region">Choose region<span id="default"></span></label>
+    <label for="region">Choose region
+        <span id="default"></span>
+    </label>
     <select  class="form-control" name="region" id="region">
         <option>us-east-1</option>
         <option>us-west-1</option>
         <option>us-west-2</option>
     </select>
     <label>
-    <input type="checkbox" name="force_spot_master" id="force_spot_master"/> Make cluster master a spot instance
+        <input type="checkbox" name="force_spot_master" id="force_spot_master"/> 
+        Make cluster master a spot instance
     </label>
-    <button type="button" id="config-button"class="btn btn-default">Configure new cluster</button>
-    
-    
+    <button type="button" id="config-button"class="btn btn-default">
+        Configure new cluster
+    </button>
 </form>
+</script>
+
+<script type="text/template" id="template-clusters">
+    <div class="panel-heading">
+        <h3 class="panel-title"><%= title %></h3>
+    </div>
+        
+    <table id="cluster-table" class="tablesorter table-hover" width=100%>
+         <thead>
+             <tr>
+                 <% _.each(headers, function(header){ %>
+                     <th><%= header %></th>
+                 <% }); %>
+             </tr>
+        </thead>
+        <tbody id="cluster-body">
+        </tbody>
+    </table>
+    <div class="panel-footer"><textarea class="logs" id="cluster-log"></textarea></div>
+</script>
+<script type="text/template" id="template-cluster">
+<td id="cluster_name" class="cluster_name">
+    <%= cluster_name %>
+</td>
+<td id="region" class="region">
+    <%= region %>
+</td>
+<td id="num_nodes" class="num_nodes">
+    <span class="badge"><%= num_nodes %></span>
+</td>
+<td id="cluster_management" class="cluster_management">
+    <div class="btn-group">
+    <button type="button" class="btn btn-default dropdown-toggle" 
+        data-toggle="dropdown">
+        Cluster Management 
+        <span class="caret"></span>
+    </button>
+    <ul class="dropdown-menu" id="cluster-management" role="menu">
+        <li class="launch"><a href="#">Launch</a></li>
+        <li class="restart"><a href="#">Restart</a></li>
+        <li class="terminate"><a href="#">Terminate</a></li>
+    </ul>
+    </div>
+</td>
+<td id="cluster_management" class="server_management">
+    <div class="btn-group">
+        <button type="button" class="btn btn-default dropdown-toggle" 
+            data-toggle="dropdown">
+            Server Management 
+            <span class="caret"></span>
+        </button>
+        <ul class="dropdown-menu" id="server-management" role="menu">
+            <% if (cluster_type == "data"){ %>
+                <li class="start-data-cluster"><a href="#">Start</a></li>
+            <% }else{ %>
+                <li class="start-logger"><a href="#">Start Logger</a></li>
+                <li class="start-gpu0"><a href="#">Start GPU0</a></li>
+                <li class="start-gpu1"><a href="#">Start GPU1</a></li>
+            <% } %>
+        </ul>
+    </div>
+</td>
+<td>
+  <span class="glyphicon glyphicon-info-sign"></span>
+</td>
+<td>
+    <span class="glyphicon glyphicon-refresh"></span>
+</td>
 </script>

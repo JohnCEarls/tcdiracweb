@@ -3,7 +3,7 @@ import tcdiracweb.utils.app_init
 import tcdiracweb.utils.user_management as u_man
 import logging
 from flask import Flask, redirect, url_for, session, request, jsonify, \
-        render_template, flash, abort
+        render_template, flash, abort, Response
 from functools import wraps
 from werkzeug.security import generate_password_hash, \
              check_password_hash
@@ -25,7 +25,8 @@ def secure_page(f):
                     flash('Credentials corrupted', 'error')
                     return redirect(url_for('logout'))
             else:
-                flash('User not active. Contact john.c.earls@gmail.com to activate.', 'warning')
+                flash(('User not active. Contact john.c.earls@gmail.com' 
+                ' to activate.'), 'warning')
         else:
             flash('Not Registered.  Click Register.')
         return redirect(url_for('login'))
@@ -90,10 +91,16 @@ def register():
     if check_id():
         ud = session['user_data']
         if u_man.add_user( ud['id'], ud['name'], ud['email'] ):
-            flash("%s[%s] has been added. Your account will be reviewed and you will be notified upon approval. Contact john.c.earls@gmail.com for assistance." % ( ud['name'], ud['email'] ), 'info' )
+            flash(('%s[%s] has been added. Your account will be reviewed '
+                'and you will be notified upon approval. '
+                'Contact john.c.earls@gmail.com for assistance.')
+                % ( ud['name'], ud['email'] ), 'info' )
         else:
-            flash("%s[%s] already exists and has not been activated.  Contact john.c.earls@gmail.com for assistance."  % ( ud['name'], ud['email'] ), 'warning' )
-        session['user_data']['registered'] = u_man.user_registered(session['user_data']['id'])
+            flash(("%s[%s] already exists and has not been activated.  " 
+                "Contact john.c.earls@gmail.com for assistance.")
+                % ( ud['name'], ud['email'] ), 'warning' )
+        session['user_data']['registered'] = u_man.user_registered(
+                session['user_data']['id'])
         return redirect(url_for('login'))
     else:
         flash("You need to be logged in before you register")
@@ -154,6 +161,33 @@ def scgenerate_config():
             ms.configure_gpu_cluster(**args)
         return jsonify({'info':'Config generation complete'});
 
+@app.route('/cluster')
+@app.route('/cluster/<cluster_name>')
+@secure_page
+def cluster_get( cluster_name = None ):
+    from tcdiracweb.utils.starclustercfg import StarclusterConfig
+    try:
+        instance_id = boto.utils.get_instance_identity()['document']['instanceId']
+        if cluster_name:
+            res = StarclusterConfig.get( instance_id, cluster_name )
+            if res:
+                return jsonify( res.attribute_values )
+            else:
+                abort(400)
+        else:
+            #return all clusters
+            import json
+            res = StarclusterConfig.scan(master_name__eq = instance_id )
+            if res:
+                return Response( json.dumps([r.attribute_values for r in res]), 
+                        mimetype='application/json')
+            else:
+                abort(400)
+    except Exception as e:
+        app.logger.error("%r" % e)
+        abort(400)
+
+
 @app.route('/createcluster/<cluster_name>')
 @secure_page
 def create_cluster( cluster_name ):
@@ -187,26 +221,21 @@ def gpu_cluster( cluster_name ):
                 p.start()
             else:
                 abort(400)
-
         elif request.form['component'] == 'gpuserver-daemon':
             gid = int(request.form['gpu-id'])
             if request.form['action'] in valid_actions and gid in (0,1):
                 args = (s_bin, url, master_name, cluster_name, gid, request.form['action'])
-                p = multiprocessing.Process(
-                        target=starclustercfg.gpu_daemon, 
-                        args=args)
+                p = multiprocessing.Process( target=starclustercfg.gpu_daemon, args=args)
                 p.start()
             else:
                 abort(400)
         elif request.form['component'] == 'restart':
             args = (s_bin, url, master_name, cluster_name)
-                p = multiprocessing.Process(
-                        target=starclustercfg.cluster_restart, 
+            p = multiprocessing.Process( target=starclustercfg.cluster_restart, 
                         args=args)
-                p.start()
+            p.start()
         else:
             abort(400)
-
         return jsonify({'master_name':master_name, 'cluster_name': cluster_name, 'pid':p.pid})
     else:
         abort(400)
