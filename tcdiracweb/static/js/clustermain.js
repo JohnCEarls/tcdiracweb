@@ -1,131 +1,3 @@
-//helper functions
-function add_cluster( cluster ){
-  c = '<tr class="';
-  if( cluster['active'] == 0 ){
-        c += 'warning"';
-  } else {
-        c += 'success"';
-  }
-  c+= '" id="' + cluster['cluster_name'] +'" ';
-  c+= '>';
-  c+= '<td id="cluster_name">';
-  c+= cluster['cluster_name'];
-  c+= '</td>';
-  c+= '<td id="cluster_type">';
-  c+= cluster['cluster_type'];
-  c+= '</td>';
-  c+= '<td id="region">'
-  c+= cluster['region'];
-  c+=  '<span class="badge">' + cluster['num_nodes'] + '</span>';
-  c+= '</td>';
-  c+= '<td>';
-  c+= '<div class="btn-group btn-group-xs">';
-  c+= '<div class="btn-group">';
-  c+= '<button type="button" class="btn btn-default dropdown-toggle"';
-  c+= ' data-toggle="dropdown">';
-  c+= 'Cluster Management <span class="caret"></span></button>';
-  c+= '<ul class="dropdown-menu" id="cluster-management">';
-  c+= '</ul>';
-  c+= '<div class="btn-group">';
-  c+= '<button type="button" class="btn btn-default dropdown-toggle"';
-  c+= ' data-toggle="dropdown">';
-  c+= 'Server Management <span class="caret"></span></button>';
-  c+= '<ul class="dropdown-menu" id="server-management">';
-  c+= '</ul>';
-  c+= '</div>'
-  c+= '</td>';
-  c+= '<td id="status-' + cluster['cluster_name'] + '" >';
-  c+= '<textarea id="ssh-cmd-' + cluster['cluster_name'];
-  c+= '">';
-  c+= '~/.local/bin/starcluster -c ';
-  c+= 'https://price.adversary.us/scconfig/' + cluster['master_name'];
-  c+= '/' + cluster['cluster_name'];
-  c+= ' sshmaster -u sgeadmin ' + cluster['cluster_name'];
-  c+= '</textarea>';
-  c+= '</td>';
-  c+= '<td id="info-glyph">';
-  c+= '<span class="'
-  c+= "glyphicon glyphicon-info-sign"
-  c += '" onclick="toggleLog(';
-  c+= "'" + cluster['cluster_name'] + "'";
-  c +=  ') " ></span>';
-  c+= '</td>';
-  c+= '</tr>';
-  c+= '<tr id="';
-  c+= cluster['cluster_name'] + '-logs" class="log-row" >';
-  c+= "<td colspan='7'><textarea class='logs' name='" + cluster['cluster_name'] + '-logs';
-  c+= "'></textarea></td></tr>";
-  return c;
-}
-/**
-  //---------------------------------------------------------------
-  c+= '<button id="' + cluster['cluster_name'] + '-launch" class="btn';
-  c+= ' btn-default" onclick="create_cluster(';
-  c+= '\''+ cluster['cluster_name'] +'\')">Launch</button>';
-  //---------------------------------------------------------------
-  //---------------------------------------------------------------
-  c+= '<button id="' + cluster['cluster_name'] + '-rs" class="btn';
-  c+= ' btn-default" onclick="restart_cluster(';
-  c+= '\''+ cluster['cluster_name'] +'\')">Restart</button>';
-  //---------------------------------------------------------------
-  if( cluster['type'] == 'gpu' ){
-      //---------------------------------------------------------------
-      c+= '<button id="' + cluster['cluster_name'] + '-ls" class="btn';
-      c+= ' btn-default " onclick="gpu_logserver(';
-      c+= '\''+ cluster['cluster_name'] +'\')">Logserver</button>';
-      //---------------------------------------------------------------
-      //---------------------------------------------------------------
-      c+= '<button id="' + cluster['cluster_name'] + '-gpu0" class="btn';
-      c+= ' btn-default" onclick="'
-      c+= 'gpu_server(';
-      c+= '\''+ cluster['cluster_name'] +'\',';
-      c+= ', \'start\' , 0 )';
-      c+= '">GPU0 start</button>';
-      //---------------------------------------------------------------
-      //---------------------------------------------------------------
-      c+= '<button id="' + cluster['cluster_name'] + '-gpu1" class="btn';
-      c+= ' btn-default" onclick="gpu_server_start(';
-      c+= '\''+ cluster['cluster_name'] +'\')">GPU1 start</button>';
-      //---------------------------------------------------------------
-  }
-  c+= '</div>
-**/
-
-function add_cluster_management( cluster_name ){
-    cm_dd = $('tr#' + cluster_name + ' ul#cluster-management');
-    buttonInfo = [
-    { text:'Launch',
-      id: cluster_name + '-launch',
-      onclick:function(){
-
-      }
-    },
-    { text:'Restart' },
-    { text:'terminate' }
-    ];
-    if (cm_dd){
-        cm_dd[0].append('<li></li>');
-    }
-}
-function gpu_server_start_button( cluster_name, gpu_id){
-  console.log('none'); 
-}
-
-function restart_cluster( cluster_name ){
- console.log('none');
-}
-
-function gpu_server( cluster_name, action, gpu_id ){
- console.log('none');
-}
-
-function toggleLog( cname ){
-  row =  $('tr#' + cname + '-logs');
-  for(var i=0; i< row.length; i++){
-      row[i].hidden = !row[i].hidden;
-  }
-}
-
 function set_cluster_default( type ){
    var default_data = {'cluster_prefix': 'gpu-data',
                         'cluster_size': '10',
@@ -161,67 +33,6 @@ function set_cluster_default( type ){
    }
    $('select#region').empty();
    reg.forEach(function(arg){$('select#region').append( '<option>' + arg + '</option>' );});
-}
-scan_results = [];
-temp = [];
-
-
-
-
-function get_clusters(){
-
-    var dynamodb = new AWS.DynamoDB();
-    /**
-    var adversary_atts = ['master_name', 'cluster_name', 'num_nodes', 
-    'cluster_type','region', 'active'];**/
-
-    params = {'TableName':'sc-adversary-config',
-      'AttributesToGet':['cluster_name'],  //adversary_atts,
-      'ScanFilter': {  "master_name":
-                    {'AttributeValueList':[ {"S": g_instance_id  } ],
-                            "ComparisonOperator": "EQ"
-                        }
-                    },
-    };
-    var scan_results = [];
-    dynamodb.scan(params, function (err, data) {
-        if (err) {
-          if (err.statusCode != '200'){
-           show_message( 'Error', '(' + err.statusCode + ': AWS)'+
-           err.message )
-        }
-           console.log(err); // an error occurred
-        } else {
-        console.log(data); // successful response
-        items = data.Items;
-        items.forEach( function( item ){ 
-          cluster = Object();
-          adversary_atts.forEach( function(att){
-              try{
-                    var my_att = '';
-                    if (item[att].N){
-                      my_att = item[att].N;
-                    } else if (item[att].S ){
-                      my_att = item[att].S;
-                    }
-                    cluster[att] = my_att;
-                  //console.log( my_att );
-                  } catch(err) {
-                    console.log("error in get_resulst:" +err);
-                  }
-            });
-            scan_results.push(cluster);
-        });
-
-        clustersa = new ClustersModel(scan_results );
-        console.log(clustersa);
-        ClusterViewTable = new ClustersView({ collection: clustersa });
-        console.log(ClusterViewTable);
-        ClusterViewTable.render();
-        temp = ClusterViewTable;
-        }
-    });
-    return scan_results;
 }
 
 function init_cluster(){
@@ -279,14 +90,17 @@ function create_cluster( cluster_name ){
     });
 }
 function update_status(){
-    $('a#update-status').prop('disabled', true);
     $.post("/sclogupdate", function( data ){
         if(data['status'] == 'updates'){
+            try{
+                data['clusters'].forEach( function(cluster){
+                    clusters_model.get( cluster ).refresh()
+                });
+            } catch(err) {
+                console.log(err);
+            }
            show_message( 'Info', data['clusters'].join() + ' have updates');
-        } else {
-           show_message( 'Info', 'No updates');
         }
-        $('update_status').prop('disabled', false);
     });
 }
 
@@ -329,6 +143,10 @@ function get_startup_log( clusterName){
 }
 //onload functions
 $(function (){
+setInterval( function(){
+    update_status();
+}, 15*1000);
+ 
 $('button#config-button').click( function(event){
     var sb = $('input#spot_bid').val().trim();
     var cp = $('input#cluster_prefix').val().trim();
@@ -343,21 +161,21 @@ $('button#config-button').click( function(event){
     };
     var posting = $.post( g_scgenerate_url , mess );
     posting.done( function( data ){
-        console.log(data);
-        if (data['error']){
+        //console.log(data);
+        if (data['status'] == 'error'){
             show_message('Error',data['error']);
         } else {
-            show_message('Info', data['info']);
+            if( data['status'] == 'success' ){
+                var cluster = new ClusterModel(
+                    { cluster_name : data['cluster_name'] });
+                cluster.fetch({ success : function(){
+                    clusters_model.add( cluster );
+                }});
+            }
+            //show_message('Info', data['info']);
         }
     });
 })
-//get_clusters();
-//get_table();
-//$("#cluster-table").tablesorter();
-//context specific functions
-//$('ul#page-specific-dd').append('<li><a href="#" id="update-status" onclick="update_status()">Update Status</a></li>')
-
-
   set_cluster_default($('#cluster_type option:selected').val());
   $('select#cluster_type').change( function(){
     set_cluster_default(

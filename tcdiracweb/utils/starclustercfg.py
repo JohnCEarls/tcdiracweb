@@ -185,9 +185,6 @@ class AdversaryMasterServer:
                 dns_prefix, disable_queue, spot_bid, permissions,
                 availability_zone, plugins, cluster_user, force_spot_master)
 
-
-
-
     def _cluster_config( self, config,
             cluster_prefix='gpu-data',
             region='us-east-1',
@@ -262,6 +259,8 @@ class AdversaryMasterServer:
         config_str = stringIO.getvalue()
         ads = AdversaryDataServer( self._model.master_name, cluster_name, region )
         ads.set_config( config_str )
+        ads.set_num_nodes( config.getint( 'cluster %s' % cluster_name, 'cluster_size') )
+        return cluster_name
 
     def configure_gpu_cluster( self, **kwargs):
         if kwargs is None:
@@ -283,9 +282,12 @@ class AdversaryMasterServer:
         cluster_name, config = self. _gpu_cluster_config( **kwargs )
         stringIO = StringIO.StringIO()
         config.write( stringIO )
+        
         config_str = stringIO.getvalue()
         ads = AdversaryGPUServer( self._model.master_name, cluster_name, region )
         ads.set_config( config_str )
+        ads.set_num_nodes( config.getint( 'cluster %s' % cluster_name, 'cluster_size') )
+        return cluster_name
 
 class AdversaryServer:
     def __init__(self, master_name, cluster_name, region=None, no_create=False):
@@ -362,6 +364,11 @@ class AdversaryServer:
         self._model.refresh()
         return self._model.startup_pid
 
+    def set_startup_pid(self, startup_pid):
+        self._model.refresh()
+        self._model.startup_pid = str(startup_pid)
+        self._model.save()
+
     @property
     def ready(self):
         self._model.refresh()
@@ -372,10 +379,17 @@ class AdversaryServer:
         self._model.ready = 1
         self._model.save()
 
-    def set_startup_pid(self, startup_pid):
+    @property
+    def num_nodes(self):
         self._model.refresh()
-        self._model.startup_pid = startup_pid
+        return self._model.num_nodes
+
+    def set_num_nodes(self, num_nodes):
+        self._model.refresh()
+        self._model.num_nodes = num_nodes
         self._model.save()
+
+
 
 class AdversaryDataServer(AdversaryServer):
     def _create_model(self, master_name, cluster_name, region):
@@ -415,6 +429,7 @@ def run_sc( starcluster_bin, url, master_name,cluster_name ):
     adv_ser.set_active()
     adv_ser.set_startup_pid(str(sc_p.pid))
     log_subprocess_messages( sc_p, q, base_message)
+    adv_ser.set_ready()
     """
     stdout = []
     stderr = []
@@ -464,36 +479,6 @@ def gpu_logserver_daemon(starcluster_bin, url, master_name, cluster_name, action
     base_message['command'] = sc_command
     sc_p = subprocess.Popen( sc_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True )
     log_subprocess_messages( sc_p, q, base_message)
-    """
-    stdout = []
-    stderr = []
-    errors = False
-    ctr = 0
-    while True:
-        ctr += 1
-        reads = [sc_p.stdout.fileno(), sc_p.stderr.fileno()]
-        ret = select.select(reads, [], [])
-        for fd in ret[0]:
-            base_message['time'] = datetime.now().isoformat()
-            base_message['count'] = ctr
-            if fd == sc_p.stdout.fileno():
-                read = sc_p.stdout.readline()
-                base_message['type'] ='stdout'
-                base_message['time'] = datetime.now().isoformat()
-                base_message['msg'] = read.strip()
-                q.write(Message(body=json.dumps(base_message)))
-            if fd == sc_p.stderr.fileno():
-                read = sc_p.stderr.readline()
-                base_message['type'] ='stderr'
-                base_message['msg'] = read.strip()
-                q.write(Message(body=json.dumps(base_message)))
-        if sc_p.poll() != None:
-            base_message['type'] = 'system'
-            base_message['msg'] = 'Complete'
-            if errors:
-                base_message['msg'] += ':Errors exist'
-            q.write(Message(body=json.dumps(base_message)))
-            break"""
 
 def gpu_daemon( starcluster_bin, url, master_name, cluster_name, gpu_id=0, action='start'):
     valid_actions = ['start', 'stop', 'status']
@@ -514,40 +499,6 @@ def gpu_daemon( starcluster_bin, url, master_name, cluster_name, gpu_id=0, actio
     base_message['command'] = sc_command
     sc_p = subprocess.Popen( sc_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True )
     log_subprocess_messages( sc_p, q, base_message)
-    """
-    stdout = []
-    stderr = []
-    errors = False
-    ctr = 0
-    while True:
-        ctr += 1
-        reads = [sc_p.stdout.fileno(), sc_p.stderr.fileno()]
-        ret = select.select(reads, [], [])
-        for fd in ret[0]:
-            base_message['time'] = datetime.now().isoformat()
-            base_message['count'] = ctr
-            if fd == sc_p.stdout.fileno():
-                read = sc_p.stdout.readline()
-                base_message['type'] ='stdout'
-                base_message['time'] = datetime.now().isoformat()
-                base_message['msg'] = read.strip()
-                q.write(Message(body=json.dumps(base_message)))
-            if fd == sc_p.stderr.fileno():
-                read = sc_p.stderr.readline()
-                base_message['type'] ='stderr'
-                base_message['msg'] = read.strip()
-                q.write(Message(body=json.dumps(base_message)))
-        if sc_p.poll() != None:
-            ctr += 1
-            base_message['time'] = datetime.now().isoformat()
-            base_message['count'] = ctr
-            base_message['type'] = 'system'
-            base_message['msg'] = 'Complete'
-            if errors:
-                base_message['msg'] += ':Errors exist'
-            q.write(Message(body=json.dumps(base_message)))
-            break"""
-
 
 def cluster_restart( starcluster_bin, url, master_name, cluster_name):
     base_message = {'cluster_name': cluster_name, 'master_name': master_name, 
@@ -558,6 +509,17 @@ def cluster_restart( starcluster_bin, url, master_name, cluster_name):
     base_message['command'] = sc_command
     sc_p = subprocess.Popen( sc_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True )
     log_subprocess_messages( sc_p, q, base_message)
+
+def cluster_terminate( starcluster_bin, url, master_name, cluster_name):
+    base_message = {'cluster_name': cluster_name, 'master_name': master_name, 
+            'component':'restart'} 
+    sqs =boto.sqs.connect_to_region("us-east-1")
+    q = sqs.create_queue('starcluster-results')
+    sc_command = "%s -c %s/%s/%s terminate -f -c %s " %( os.path.expanduser(starcluster_bin), url,master_name, cluster_name, cluster_name)
+    base_message['command'] = sc_command
+    sc_p = subprocess.Popen( sc_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True )
+    log_subprocess_messages( sc_p, q, base_message)
+
 
 def log_subprocess_messages( sc_p, q, base_message):
     stdout = []
@@ -600,6 +562,7 @@ def log_sc_startup( ):
     msg = q.read(120)
     msg_comb = defaultdict(list)
     err = ''
+    clusters = set()
     while msg:
         mymsg = json.loads(msg.get_body())
         q.delete_message( msg )
@@ -609,6 +572,7 @@ def log_sc_startup( ):
     for key, msg_list in msg_comb.iteritems():
         first = msg_list[0]
         msg_list.sort(key=lambda x: x['count'])
+        clusters.add( first['cluster_name'] )
         adv_ser = AdversaryServer(first['master_name'], first['cluster_name'], no_create=True)
         log = adv_ser.startup_log 
         for msg in msg_list:
@@ -625,7 +589,8 @@ def log_sc_startup( ):
                     log += '[%s] %s\n' % (msg['time'], msg['msg'])
                     adv_ser.set_ready()
         adv_ser.set_startup_log( log )
-    return msg_comb.keys() 
+
+    return list(clusters) 
 
 if __name__ == "__main__":
     if not AdversaryMaster.exists():

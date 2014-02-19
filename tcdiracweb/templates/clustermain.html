@@ -9,7 +9,6 @@ AWS.config.credentials = new AWS.WebIdentityCredentials({
 AWS.config.region = 'us-east-1';
 AWS.config.credentials.params.WebIdentityToken = "{{session['id_token']}}";
 AWS.config.sslEnabled = true;
-
 g_instance_id = '{{ instance_id }}';
 g_scgenerate_url = '{{ url_for('scgenerate_config') }}';
 </script>
@@ -27,7 +26,6 @@ g_scgenerate_url = '{{ url_for('scgenerate_config') }}';
     tr.log_row {
         hidden: true;
     }
-
     textarea.logs {
         width:100%;
     }
@@ -63,36 +61,190 @@ g_scgenerate_url = '{{ url_for('scgenerate_config') }}';
 </script>
 <script type="text/javascript">
 var ClusterModel = Backbone.Model.extend({
-  defaults : {'log':'None'},
-  url:'/cluster',
+  defaults : {'log':'None', 
+    'active':0,
+    'ready':0,
+    '_launching':false,
+    '_autofetch' : false,
+    'display_state': 'default'
+    },
+  urlRoot:'/cluster',
   idAttribute: "cluster_name",
   initialize : function(){
     this._getLog();
+    //don't want all clusters firing at same time
+    //so inject a little anarchy
+    setInterval( this.autofetch(this), (40 + 30*Math.random())*1000 );
+    if( this.get('active') && !this.get('ready') ){
+      this.set('_launching', true);
+    } else {
+      this.set('_launching', false);
+    }
+
+    this.bind("change:ready", function(){
+        
+        if(this.get('ready') == 1){
+            this.set('_launching', false);
+        }
+    });
   },
-  launch : function(){
-    console.log(this.get('cluster_name') + ' launch');
+
+  launchable : function(){
+    return this.get('active') == 0 && !this.get('_launching');
+    },
+   restartable : function(){
+    return this.get('ready') == 1;
+   },
+   terminatable : function(){
+     return this.get('active') == 1;
+   },
+
+   startable : function(){
+     return this.get('active') == 1;
+   },
+   startloggable : function(){
+     return this.get('active') == 1;
+   },
+   startgpuable : function(gpu_id){
+     return this.get('active') == 1;
+   },
+
+   launch : function(){
+      if(this.launchable()){
+         this.set('display_state', 'warning');
+         this.set('_launching', true);
+         var c_launch = $.post('/createcluster', 
+                 {cluster_name: this.get('cluster_name')});
+         var that = this;
+         c_launch.done( function( response ){
+            if (response['status'] == 'error'){
+                show_message('Error', 'Error launching ' +
+                  that.get('cluster_name') + '.');
+                } else {
+                show_message('Info', 'Launching ' +
+                   that.get('cluster_name') + '.');
+                }
+            });
+        setTimeout( function(){update_status(); }, 5000);      
+       }
+   },
+
+
+  autofetch : function(that){
+    if (that.get('_launching')){
+      console.log( 'Autofetching ' + that.get('cluster_name'));
+      that.refresh();
+    }
   },
+
   terminate :function(){
-    console.log(this.get('cluster_name') + ' terminate');
-  },
-  restart : function(){
-    console.log( this.get('cluster_name') + ' restart');
-  },
+      if (this.terminatable()){
+         if( this.isGPU() ){
+              var t_url =  '/gpucluster';
+         } else {
+              var t_url =  '/datacluster';
+         }
+         var c_term = $.post(t_url, 
+                 {cluster_name: this.get('cluster_name'),
+                 component:'terminate'
+                 });
+         var that = this;
+         c_term.done( function( response ){
+            if (response['status'] == 'error'){
+                show_message('Error', 'Error terminating ' +
+                  that.get('cluster_name') + '.');
+                } else {
+                show_message('Info', 'Terminating ' +
+                   that.get('cluster_name') + '.');
+                }
+                });
+         }
+         setTimeout( function(){update_status(); }, 5000);      
+         console.log(this.get('cluster_name') + ' terminate');
+    },
+    restart : function(){
+      if(this.restartable()){
+         if( this.isGPU() ){
+              var t_url =  '/gpucluster';
+         } else {
+              var t_url =  '/datacluster';
+         }
+         var c_term = $.post(t_url, 
+                 {cluster_name: this.get('cluster_name'),
+                 component:'restart'
+                 });
+         var that = this;
+         c_term.done( function( response ){
+            if (response['status'] == 'error'){
+                show_message('Error', 'Error restarting ' +
+                  that.get('cluster_name') + '.');
+                } else {
+                show_message('Info', 'Restarting ' +
+                   that.get('cluster_name') + '.');
+                }
+                });
+        setTimeout( function(){update_status(); }, 5000);      
+     
+        console.log( this.get('cluster_name') + ' restart');
+      }
+    },
   startLogger : function(){
-    if(this.isGPU()){
+    if(this.isGPU() && this.startloggable()){
+         var c_term = $.post('/gpucluster', 
+                 {cluster_name: this.get('cluster_name'),
+                  component:'logserver-daemon',
+                  action:'start',
+                 });
+         var that = this;
+         c_term.done( function( response ){
+            if (response['status'] == 'error'){
+                  show_message('Error', 'Error starting gpu-logger' +
+                  ' on ' + that.get('cluster_name') + '.');
+                } else {
+                  show_message('Info', 'Starting gpu-logger' +
+                    ' on ' + that.get('cluster_name') + '.');
+                }
+                });
+         setTimeout( function(){update_status(); }, 5000);      
     console.log( this.get('cluster_name')+' startLogger');
     }
   },
   startGPU : function(gid){
-    if(this.isGPU()){
-      console.log( this.get('cluster_name') + ' startGPU' + gid );
+    if(this.isGPU() && this.startgpuable(gid)){
+        this.actGPU( gid, 'start');
+        setTimeout( function(){update_status(); }, 5000);      
     }
   },
+             
+  actGPU : function( gid, action ){
+
+         var c_term = $.post('/gpucluster', 
+                 {cluster_name: this.get('cluster_name'),
+                  component:'gpuserver-daemon',
+                  action:'start',
+                  gid: gid
+                 });
+         var that = this;
+         c_term.done( function( response ){
+            if (response['status'] == 'error'){
+                show_message('Error', 'Error ' + action + 'ing gpu' + gid +
+                  'on ' + that.get('cluster_name') + '.');
+                } else {
+                show_message('Info', action+'ing gpu' + gid +
+                    'on ' + that.get('cluster_name') + '.');
+                }
+                console.log(response);
+                });
+      console.log( this.get('cluster_name') + ' startGPU' + gid );
+  },
   startDataCluster: function(){
-    if(this.isData()){
+    if(this.isData() && this.startable() ){
+       show_message('Error', 'Starting a datacluster server is not supported yet');
       console.log( this.get('cluster_name') + ' startDataCluster' );
     }
   },
+
+
   isGPU : function(){
     return this.get("cluster_type") == "gpu";
   },
@@ -100,7 +252,9 @@ var ClusterModel = Backbone.Model.extend({
     return this.get("cluster_type") == "data";
   },
   _getLog : function(){
+    if( this.get("active") != 0 ){
     var that = this;
+                
     var s3 = new AWS.S3;
     var configString = 'None';
     var req = s3.getObject({Bucket:'ndp-adversary', 
@@ -116,15 +270,35 @@ var ClusterModel = Backbone.Model.extend({
         }
     });
     req.on('success', function(response){
-        testing_var = response;
-        console.log(response);
-        configString = response.data.Body.toString() + that.get('log');
+        //testing_var = response;
+        //console.log(response);
+        configString = response.data.Body.toString();
         that.set('log', remove_header(configString));
     });
     req.send();
+  }
   },
-  refresh : function(){
+setDisplayState : function(){
+    if (this.get('ready')){
+        this.set('display_state', 'success');
+    }
+    else if( this.get('active') && !this.get('ready') ){
+        this.set('display_state', 'warning');
+    }
+    else if( !this.get('active') && this.isData() ){
+        this.set('display_state', 'primary');
+    } else if( !this.get('active') && this.isGPU() ){
+        this.set('display_state', 'info');
+    }
+    /**
+      else if( this.get('terminated') ){
+        this.set('display_state', 'danger');
+      }
+    **/
+},
+refresh : function(){
     this.fetch();
+    this.setDisplayState();
     this._getLog();
   }
 
@@ -133,6 +307,7 @@ var ClusterModel = Backbone.Model.extend({
 var ClustersModel = Backbone.Collection.extend({
   model: ClusterModel,
   url: '/cluster'
+
 });
 
 var ClustersView = Backbone.View.extend({
@@ -166,7 +341,6 @@ var ClustersView = Backbone.View.extend({
     });
   },  
   loadCompleteHandler: function(){
-                           //this.render();
       console.log('loadCompleteHandler');                     
   },
   errorHandler : function(){
@@ -179,9 +353,9 @@ var ClustersView = Backbone.View.extend({
     }
     var myclusterView = new ClusterView({ model: cluster });
     myclusterView.render();
-    console.log(cluster);
-    console.log("processCluster");
-    console.log(myclusterView);
+    //console.log(cluster);
+    //console.log("processCluster");
+    //console.log(myclusterView);
     this.$el.find('tbody#cluster-body').append(myclusterView.el);
   }
 });
@@ -193,12 +367,17 @@ var ClusterView = Backbone.View.extend({
   className: "clusterRow",
   url: '/cluster',
   initialize : function(){
+    this.clickables();
     this.model.on("change", this.clusterChanged, this);
   },
 
   clusterChanged: function( model, changes ){
+    this.clickables(); 
+    
     console.log("clusterChanged:" + model.get("cluster_name"));
-    },
+    console.log(changes);
+    this.checkState();
+  },
   events : {
     //cluster actions
     'click .launch': 'launchCluster',
@@ -219,8 +398,66 @@ var ClusterView = Backbone.View.extend({
   render: function () {
     var outputHtml = this.template(this.model.toJSON());
     this.$el.html(outputHtml);
+    this.clickables();
+    this.checkState();
     return this;
   },
+
+clickables : function(){
+    if(!this.model.launchable()){this.$('li.launch').addClass("disabled");}
+    else {this.$('li.launch').removeClass("disabled");
+    }
+
+    if(!this.model.restartable()){this.$('li.restart').addClass("disabled");} 
+    else { this.$('li.restart').removeClass("disabled"); }
+
+    if( !this.model.terminatable() ){this.$('li.terminate').addClass("disabled");} 
+    else { this.$('li.terminate').removeClass("disabled");
+    }
+
+    if( this.model.isData() ){
+        if(!this.model.startable() ){this.$('li.start-data-cluster').addClass("disabled");} 
+        else { this.$('li.start-data-cluster').removeClass("disabled");
+
+        }
+    } else {
+        if(!this.model.startloggable()){
+            this.$('li.start-logger').addClass('disabled');
+        } else {
+            this.$('li.start-logger').removeClass('disabled');
+        }
+        if(!this.model.startgpuable(0)){
+            this.$('li.start-gpu0').addClass('disabled');
+        } else {
+            this.$('li.start-gpu0').removeClass('disabled');
+        }
+        if( !this.model.startgpuable(1) ){
+            this.$('li.start-gpu1').addClass('disabled');
+        } else {
+            this.$('li.start-gpu1').removeClass('disabled');
+        }
+    }
+
+
+  },
+    
+  removeLabels : function( selector ){
+      var labels = ['label-default', 'label-primary', 'label-success', 
+      'label-info', 'label-warning', 'label-danger'];
+       labels.forEach( function( label ){
+               //console.log(selector);
+       selector.removeClass(label);
+      });
+      return selector;
+  },
+
+  checkState : function(){
+     this.model.setDisplayState()
+     var state = this.model.get('display_state');
+     sel = this.removeLabels( this.$('span.label') );
+     sel.addClass( 'label-' +  state  );
+  },
+
   launchCluster: function(){
     this.model.launch();
   },
@@ -245,16 +482,17 @@ var ClusterView = Backbone.View.extend({
   refresh : function(){
     console.log("refreshing");
     this.model.refresh();
-          },              
+  },              
   setLog : function(){
+    $('h4#active-cluster').text( this.model.get('cluster_name') + ' Logs');
     $('textarea.logs')[0].value = this.model.get('log');
   }
 });
 
 $(function(){
-    cm = new ClustersModel();
-    clusterView = new ClustersView({ collection: cm} );
-    clusterView.load();
+    clusters_model = new ClustersModel();
+    clusters_view = new ClustersView({ collection: clusters_model} );
+    clusters_view.load();
 });
 
 

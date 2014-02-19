@@ -17,6 +17,10 @@ import boto.utils
 def secure_page(f):
     @wraps(f)
     def decorated_function( *args, **kwargs ):
+        if 'user_data' not in session:
+            flash('Credentials corrupted', 'error')
+            return redirect(url_for('logout'))
+
         if u_man.user_registered(session['user_data']['id']):
             if  u_man.user_active(session['user_data']['id']):
                 if check_id():
@@ -142,24 +146,36 @@ def clustermain():
 def scgenerate_config():
     app.logger.debug(repr(request))
     from tcdiracweb.utils.starclustercfg import AdversaryMasterServer
-    if request.method == 'POST':
-        allowed = ['cluster_size', 'cluster_prefix', 'region', 'availability_zone','spot_bid']
-        args = {}
-        for k, v in request.form.iteritems():
-            if k in allowed and v != 'na' and k != 'cluster_type':
-                args[k] = str(v.strip())
-        if 'force_spot_master' in request.form and request.form['force_spot_master'] == 'true':
-            args['force_spot_master'] = True
+    try:
+        if request.method == 'POST':
+            allowed = ['cluster_size', 'cluster_prefix', 'region', 'availability_zone','spot_bid']
+            args = {}
+            for k, v in request.form.iteritems():
+                if k in allowed and v != 'na' and k != 'cluster_type':
+                    args[k] = str(v.strip())
+            if 'force_spot_master' in request.form and request.form['force_spot_master'] == 'true':
+                args['force_spot_master'] = True
+            else:
+                args['force_spot_master'] = False
+            ms = AdversaryMasterServer()
+            app.logger.debug( str(args) )
+            app.logger.debug( str(request.form))
+            if request.form['cluster_type'] == 'data':
+                cluster_name = ms.configure_data_cluster(**args)
+            elif request.form['cluster_type'] == 'gpu':
+                cluster_name = ms.configure_gpu_cluster(**args)
+            message = {'status': 'success',
+                    'cluster_name': cluster_name}
+            return jsonify(message);
         else:
-            args['force_spot_master'] = False
-        ms = AdversaryMasterServer()
-        app.logger.debug( str(args) )
-        app.logger.debug( str(request.form))
-        if request.form['cluster_type'] == 'data':
-            ms.configure_data_cluster(**args)
-        elif request.form['cluster_type'] == 'gpu':
-            ms.configure_gpu_cluster(**args)
-        return jsonify({'info':'Config generation complete'});
+            message = {'status' : 'error',
+                    'error': 'No POST Request found'}
+            return jsonify( message )
+    except Exception as e:
+        app.logger.error("%r" % e)
+        message = {'status' : 'error',
+            'error': 'Server Error'}
+        return jsonify( message )
 
 @app.route('/cluster')
 @app.route('/cluster/<cluster_name>')
@@ -188,29 +204,44 @@ def cluster_get( cluster_name = None ):
         abort(400)
 
 
-@app.route('/createcluster/<cluster_name>')
+@app.route('/createcluster', methods=['POST'])
 @secure_page
-def create_cluster( cluster_name ):
-    from tcdiracweb.utils import starclustercfg
-    s_bin = '/home/sgeadmin/.local/bin/starcluster'
-    url =  'https://price.adversary.us/scconfig'
-    instance_id =  boto.utils.get_instance_identity()['document']['instanceId']
-    master_name = instance_id 
-    args = (s_bin, url, master_name, cluster_name)
-    p = multiprocessing.Process(target=starclustercfg.run_sc, args=args)
-    p.start()
-    return jsonify({'master_name':master_name, 'cluster_name': cluster_name, 'pid':p.pid})
+def create_cluster():
+    if request.method == 'POST':
+        cluster_name = request.form['cluster_name']
+        instance_id =  boto.utils.get_instance_identity()['document']['instanceId']
+        from utils.starclustercfg import AdversaryServer, SCConfigError
+        from utils import starclustercfg
+        try:
+            ams = AdversaryServer(instance_id, cluster_name, no_create=True )
+        except SCConfigError as e:
+            app.logger.error("Attempt to create unkown cluster: [%r]" % e)
+            return jsonify({'status': 'error', 'error': 'Invalid Request'})
+        s_bin = '/home/sgeadmin/.local/bin/starcluster'
+        url =  'https://price.adversary.us/scconfig'
+        master_name = instance_id 
+        args = (s_bin, url, master_name, cluster_name)
+        p = multiprocessing.Process(target=starclustercfg.run_sc, args=args)
+        p.start()
+        ams.set_startup_pid(p.pid)
+        ams.set_active()
+        return jsonify({'status':'success', 'cluster_name': cluster_name})
+    else:
+        return jsonify({'status': 'error', 'error': 'Invalid Request'})
 
-@app.route('/gpucluster/<cluster_name>', methods=['POST'])
+@app.route('/gpucluster', methods=['POST'])
 @secure_page
-def gpu_cluster( cluster_name ):
+def gpu_cluster():
     from tcdiracweb.utils import starclustercfg
     s_bin = '/home/sgeadmin/.local/bin/starcluster'
     url =  'https://price.adversary.us/scconfig'
+    
     instance_id =  boto.utils.get_instance_identity()['document']['instanceId']
     master_name = instance_id 
     valid_actions = ['start', 'stop', 'status']
+    app.logger.error( "%r" % request.form )
     if request.method == 'POST':
+        cluster_name = request.form['cluster_name']
         if request.form['component'] == 'logserver-daemon':
             if request.form['action'] in valid_actions:
                 args = (s_bin, url, master_name, cluster_name, 
@@ -222,13 +253,47 @@ def gpu_cluster( cluster_name ):
             else:
                 abort(400)
         elif request.form['component'] == 'gpuserver-daemon':
-            gid = int(request.form['gpu-id'])
+            gid = int(request.form['gid'])
             if request.form['action'] in valid_actions and gid in (0,1):
                 args = (s_bin, url, master_name, cluster_name, gid, request.form['action'])
                 p = multiprocessing.Process( target=starclustercfg.gpu_daemon, args=args)
                 p.start()
             else:
                 abort(400)
+        elif request.form['component'] == 'restart':
+            args = (s_bin, url, master_name, cluster_name)
+            p = multiprocessing.Process( target=starclustercfg.cluster_restart, 
+                        args=args)
+            p.start()
+        elif request.form['component'] == 'terminate':
+            args = (s_bin, url, master_name, cluster_name)
+            p = multiprocessing.Process( target=starclustercfg.cluster_terminate, 
+                        args=args)
+            p.start()
+        else:
+            abort(400)
+        return jsonify({'master_name':master_name, 'cluster_name': cluster_name, 'pid':p.pid})
+    else:
+        abort(400)
+
+        
+@app.route('/datacluster', methods=['POST'])
+@secure_page
+def data_cluster():
+    from tcdiracweb.utils import starclustercfg
+    s_bin = '/home/sgeadmin/.local/bin/starcluster'
+    url =  'https://price.adversary.us/scconfig'
+    instance_id =  boto.utils.get_instance_identity()['document']['instanceId']
+    master_name = instance_id 
+    valid_actions = ['start', 'stop', 'status']
+    app.logger.error( "%r" % request.form )
+    if request.method == 'POST':
+        cluster_name = request.form['cluster_name']
+        if request.form['component'] == 'terminate':
+            args = (s_bin, url, master_name, cluster_name)
+            p = multiprocessing.Process( target=starclustercfg.cluster_terminate, 
+                        args=args)
+            p.start()
         elif request.form['component'] == 'restart':
             args = (s_bin, url, master_name, cluster_name)
             p = multiprocessing.Process( target=starclustercfg.cluster_restart, 

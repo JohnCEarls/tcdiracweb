@@ -48,7 +48,10 @@
         <tbody id="cluster-body">
         </tbody>
     </table>
-    <div class="panel-footer"><textarea class="logs" id="cluster-log"></textarea></div>
+    <div class="panel-footer">
+        <h4 class="panel-title" id="active-cluster"></h4><br/>
+        <textarea class="logs" id="cluster-log"></textarea>
+    </div>
 </script>
 <script type="text/template" id="template-cluster">
 <td id="cluster_name" class="cluster_name">
@@ -58,7 +61,7 @@
     <%= region %>
 </td>
 <td id="num_nodes" class="num_nodes">
-    <span class="badge"><%= num_nodes %></span>
+    <span class="label label-default"><%= num_nodes %></span>
 </td>
 <td id="cluster_management" class="cluster_management">
     <div class="btn-group">
