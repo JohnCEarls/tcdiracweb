@@ -130,12 +130,96 @@ class TSVGen:
                             descriptions.append(description)
             by_rank = True
         return json.dumps( sorted( descriptions , key=lambda x: x['avg_rank'] ))
+from datadirac.aggregate import DataForDisplay
+import tempfile
+from datadirac.utils import stat
+import boto
+from boto.s3.key import Key
+class NetworkTSV:
+    def __init__( self ):
+        pass
+
+    def _available(self):
+        res = DataForDisplay.scan()
+        results = {}
+        for r in res:
+            results[r.identifier +'-' +r.timestamp] = r.attribute_values
+        return results
+
+    def get_display_info(self, select=[], display_vars=['network', 'description', 'alleles', 'strains'] ):
+        always = ['identifier', 'timestamp']
+        _vars = always + display_vars;
+        result = []
+        current = self._available()
+        if select:
+            for s_id in select:
+                if s_id in current:
+                    selected = {'id':s_id}
+                    for v in _vars:
+                        if type( current[s_id][v] ) is set:
+                            selected[v] = list( current[s_id][v] )
+                        else:
+                            selected[v] = current[s_id][v]
+                    result.append(selected)
+        else:
+            for s_id in current.keys() :
+                if s_id in current:
+                    selected = {'id':s_id}
+                    for v in _vars:
+                        if type( current[s_id][v] ) is set:
+                            selected[v] = list( current[s_id][v] )
+                        else:
+                            selected[v] = current[s_id][v]
+                    result.append(selected)
+        return result
+
+    def set_qval_table( self, identifier, timestamp ):
+        res = DataForDisplay.get(identifier, timestamp)
+        s3 = boto.connect_s3()
+        bucket = s3.get_bucket( res.data_bucket )
+        k = bucket.get_key( res.data_file )
+        with tempfile.TemporaryFile() as fp:
+            k.get_contents_to_file(fp)
+            fp.seek(0)
+            qv = stat.get_qval_table(fp)
+        with tempfile.TemporaryFile() as fp2:
+            qv.to_csv( fp2, sep='\t', index_label='networks' )
+            fp2.seek(0)
+            k = Key(bucket)
+            k.key = 'qvals-' + identifier + '-' + timestamp + '.tsv'
+            k.set_contents_from_file(fp2)
+        res.qvalue_file = 'qvals-' + identifier + '-' + timestamp + '.tsv'
+        res.save()
+
+
+    def get_fdr_cutoffs( self, identifier, timestamp, alphas=[.05]):
+        """
+        By benjamini-hochberg
+        """
+        res = DataForDisplay.get(identifier, timestamp)
+        s3 = boto.connect_s3()
+        bucket = s3.get_bucket( res.data_bucket )
+        k = bucket.get_key( res.data_file )
+        with tempfile.TemporaryFile() as fp:
+            k.get_contents_to_file(fp)
+            fp.seek(0)
+            res = stat.get_fdr_cutoffs(fp, alphas=alphas)
+        return res
+
 
 if __name__ == "__main__":
     base = "/home/earls3/secondary/tcdiracweb/tcdiracweb/static/data"
 
-    t = TSVGen( base + "/exp_mat_b6_wt_q111.pandas", base + "/metadata_b6_wt_q111.txt")
-    t.genBivariate('HISTONE_MODIFICATION')
+    #t = TSVGen( base + "/exp_mat_b6_wt_q111.pandas", base + "/metadata_b6_wt_q111.txt")
+    #t.genBivariate('HISTONE_MODIFICATION')
+    
+    ntsv = NetworkTSV()
+    di =  ntsv.get_display_info()
+    for k in di:
+        print ntsv.set_qval_table(k['identifier'], k['timestamp'])
+        print ntsv.get_fdr_cutoffs(k['identifier'], k['timestamp'], alphas=[.05])
+
+
     
 
 
