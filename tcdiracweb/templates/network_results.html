@@ -1,0 +1,157 @@
+{%extends 'layout.html' %}
+{% block title %} Cluster management {% endblock %}
+{% block content %}
+<script type="text/javascript">
+AWS.config.credentials = new AWS.WebIdentityCredentials({
+        RoleArn: "arn:aws:iam::315557446885:role/tcdiracwebRoleGoogle",
+    }); 
+AWS.config.region = 'us-east-1';
+AWS.config.credentials.params.WebIdentityToken = "{{session['id_token']}}";
+AWS.config.sslEnabled = true;
+</script>
+<script type="text/template" id="net-display">
+    <strong><%= network %></strong> <%= timestamp %>
+</script>
+
+<script type="text/template" id="pv-table">
+<table 
+<class="table table-condensed tablesorter" id="pvals" ><thead>cript>
+
+<script type="text/template" id="pv-row">
+    <tr id="<%= network_name %>">
+        <td><%= network_name.split('_').join(' ') =%></td>
+        <% for(var i=0; i < values.length; i++) { %>
+            <td class="<% 
+                if(values[i] == 'unk' || values[i] <= sig[i]){ %>significant<%}
+                else {%>insignificant<% } %>">
+                <%= values[i] =>
+            </td>
+        <% } %>
+    </tr>
+</script>
+
+<div class="list-group" id="ndisp">
+</div>
+<div class="whatever" id="tcontainer"></div>
+<script type="text/javascript">
+var NetworkDisplayModel = Backbone.Model.extend({
+            
+    });
+var NetworkDisplayCollection = Backbone.Collection.extend({
+    model : NetworkDisplayModel,
+    url: '/netresultsfordisplay'
+    });
+var NetworkDisplayModelView = Backbone.View.extend({
+    template: _.template($('#net-display').html()),
+    tagName: "a",
+    className:"list-group-item",
+    render : function() {
+         var outputHtml = this.template(this.model.toJSON());
+         this.$el.html(outputHtml);
+         return this;
+    }
+    });
+
+var NetworkDisplayCollectionView = Backbone.View.extend({
+    el: "#ndisp",
+
+    initialize: function (){
+      _.bindAll.apply(_, [this].concat(_.functions(this)))
+      this.collection.bind('add', this.processNetworkDisplayModel);
+      this.collection.fetch({
+        add:true,
+        success: function(){},
+        error: function(){}
+      });
+    },
+    processNetworkDisplayModel : function( nd ){
+        var ndview = new NetworkDisplayModelView({ model: nd});
+        ndview.render()
+        this.$el.append(ndview.el);
+    }
+    });
+
+
+
+ 
+function get_table( table ){
+    nrows = table['index'].length;
+    ncols = table['columns'].length;
+    str = '<table class="table table-condensed tablesorter" id="pvals" ><thead><tr><th></th>';
+    for( var i=0; i<ncols;i++){
+        str +='<th>' + table['columns'][i] + '</th>';
+    }
+    str += '</tr><tr><tbody class="table table-striped">';
+
+    for( var i=0; i<nrows;i++){
+        str += '<tr><td>' + table['index'][i].split('_').join(' ') + '</td>';
+        for( var j=0; j<ncols;j++){
+            str += '<td>';
+            if(table['data'][i][j]){
+                str += sprintf('%.01f', table['data'][i][j]);
+            } else {
+                str += 'und';
+            }
+            str += '</td>';
+        }
+        str += '</tr>'
+    }
+    str += "</tbody></table>";
+    return str;
+}
+$(function(){
+  ndc = new NetworkDisplayCollection();
+  ndcview = new NetworkDisplayCollectionView({ collection:ndc });
+});
+  var myTextExtraction = function(node){
+    console.log(node.innerHTML);
+    if( node.innerHTML =='und' ){
+
+        return '-10000';
+    } else {
+        return node.innerHTML;
+    }
+  }
+
+  $.getJSON(url='{{url_for('get_pvalues')}}', function(data){
+      console.log(data);
+      htmlTable = get_table(data);
+      console.log(htmlTable);
+      $('#tcontainer').append(htmlTable);
+      $('#pvals').tablesorter({textExtraction: myTextExtraction} );
+      }
+      );
+
+var PvalueRow = BackBone.Model.extend({});
+var PvalueTable = Backbone.Collection.extend({
+    defaults:{ source_name: ''},
+    model : PvalueRow,
+    initialize :function(){
+        _.bindAll.apply(_, [this].concat(_.functions(this)))
+    },
+    load : function( table, siglevel ){
+        this.set({columns, table.columns]})
+        for(var i=0; i<table.index.length;i++){
+            this.addRow( table.index[i], table.data[i], siglevel );
+        }
+        
+    },
+
+    addRow : function( net_name, val, siglevel ){
+        var pv = new PvalueRow({network_name:net_name,
+                values : val, sig:siglevel})
+        this.collection.add( pv );
+    }
+        
+    
+
+    });
+var PvalueTableView = Backbone.View.Extend({});
+var PvalueRowView = BackoneView.Extend({});
+
+
+
+});
+
+</script>
+{% endblock %}
