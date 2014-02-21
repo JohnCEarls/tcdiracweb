@@ -7,6 +7,7 @@ import os.path
 import json
 import boto
 from boto.s3.key import Key
+import cPickle as pickle
 
 opj = os.path.join
 class TSVGen:
@@ -206,21 +207,95 @@ class NetworkTSV:
             res = stat.get_fdr_cutoffs(fp, alphas=alphas)
         return res
 
+from pynamodb.models import Model
+from pynamodb.attributes import UnicodeAttribute
+
+class NetworkInfo(Model):
+    table_name = 'net_info_table'
+    src_id = UnicodeAttribute(hash_key=True)
+    pw_id = UnicodeAttribute(range_key=True)
+    broad_url=UnicodeAttribute(default='')
+    gene_ids=UnicodeAttribute(default='')
+
+class CrossTalkMatrix:
+    """
+    Dataframe where df[a,b] says what percent of a is shared with b
+    """
+    def __init__(self):
+        self.edge_list = defaultdict(set)
+
+    def generate(self, networks=[]):
+        """
+        networks is a list of tuples (src_id, pw_id)
+        """
+        
+        if networks:
+            for item in NetworkInfo.batch_get(networks):
+                self.add_item( item )
+        else:
+            for item in NetworkInfo.scan():
+                self.add_item(item)
+        print "have networks"
+        n = len(self.edge_list)
+        self.cross_talk = pandas.DataFrame(np.zeros((n,n)), 
+            index=self.edge_list.keys(), columns=self.edge_list.keys())
+
+        ctr = 0
+        for index, igeneset in self.edge_list.iteritems():
+            if ctr % 100 == 0:
+                print "%i of %i" % (ctr, n)
+            ctr += 1
+            for column, ggeneset in self.edge_list.iteritems():
+                self.cross_talk.at[index, column] = len(igeneset.intersection( ggeneset )) / float(len(igeneset))
+        return self.cross_talk
+
+    def add_item(self, item ):
+        net_string = item.gene_ids
+        self.edge_list[item.pw_id] = set(net_string[6:].strip().split('~:~'))
+
+    def read_pickle(self, file_name):
+        self.cross_talk = pandas.read_pickle(file_name)
+
+    def get_crosstalk(self, networks, bucket=None, file_name=None):
+        if not bucket:
+            return self.generate( networks )
+        else:
+            conn = boto.connect_s3()
+            b = conn.get_bucket(bucket)
+            k = b.get_key(file_name)
+            with tempfile.SpooledTemporaryFile() as f:
+                k.get_contents_to_file(f)
+                f.seek(0)
+                self.cross_talk = pickle.load(f)
+            if not isinstance(networks[0], basestring):
+                networks = [n for _,n in networks]
+            return self.cross_talk.loc[networks, networks]
+
+
 
 if __name__ == "__main__":
     base = "/home/earls3/secondary/tcdiracweb/tcdiracweb/static/data"
 
     #t = TSVGen( base + "/exp_mat_b6_wt_q111.pandas", base + "/metadata_b6_wt_q111.txt")
     #t.genBivariate('HISTONE_MODIFICATION')
-    
+    """
+    conn = boto.connect_s3()
+    bucket = conn.get_bucket('ndp-hdproject-csvs')
+    k = Key(bucket)
+    k.key = 'crosstalk-biocartaUkeggUgoUreactome-pandas-dataframe.pkl'
+    k.set_contents_from_filename('ct.pkl')"""
+    """
     ntsv = NetworkTSV()
     di =  ntsv.get_display_info()
     for k in di:
         print ntsv.set_qval_table(k['identifier'], k['timestamp'])
-        print ntsv.get_fdr_cutoffs(k['identifier'], k['timestamp'], alphas=[.05])
-
-
+        print ntsv.get_fdr_cutoffs(k['identifier'], k['timestamp'], alphas=[.05])"""
     
-
-
-
+    cm = CrossTalkMatrix()
+    """
+    ctm =  cm.generate( networks=[('c2.cp.kegg.v4.0.symbols.gmt', 'KEGG_LEISHMANIA_INFECTION'),
+        ('c2.cp.biocarta.v4.0.symbols.gmt', 'BIOCARTA_41BB_PATHWAY'), 
+        ('c2.cp.biocarta.v4.0.symbols.gmt', 'BIOCARTA_ACTINY_PATHWAY')] )"""
+    network = ['KEGG_LEISHMANIA_INFECTION', 'BIOCARTA_41BB_PATHWAY', 'BIOCARTA_ACTINY_PATHWAY']
+    print cm.get_crosstalk(network,  bucket='ndp-hdproject-csvs', 
+        file_name='crosstalk-biocartaUkeggUgoUreactome-pandas-dataframe.pkl')

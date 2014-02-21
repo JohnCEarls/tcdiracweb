@@ -110,6 +110,61 @@ def register():
         flash("You need to be logged in before you register")
         return redirect(url_for('logout'))
 
+@app.route('/netresults')
+def show_net_results():
+    return render_template('network_results.html')
+
+@app.route('/netresultsfordisplay')
+def get_nets_for_display():
+    from datadirac.aggregate import DataForDisplay
+    import json
+    res =  DataForDisplay.scan()
+    rlist = [r.attribute_values for r in res]
+    for a in rlist:
+        for k,v in a.iteritems():
+            if type(v) is set:
+                a[k]=list(v)
+    if res:
+        return Response( json.dumps(rlist), 
+                mimetype='application/json')
+    else:
+        abort(400)
+
+@app.route("/pvals",methods=['GET'])
+def get_pvalues():
+    import boto
+    import tempfile
+    import pandas
+    import tcdiracweb.utils.maketsv as tsv
+    import json
+    import numpy as np
+
+    df = 'black_6_go_4-joined-2014.02.20.04:09:56.tsv' #request.form["data_file"]
+    bucket = 'ndp-hdproject-csvs' #request.form["data_bucket"]
+    conn = boto.connect_s3()
+    b = conn.get_bucket(bucket)
+    k = b.get_key(df)
+    with tempfile.TemporaryFile() as fp:
+        k.get_contents_to_file(fp)
+        fp.seek(0)
+        table = pandas.read_csv(fp, sep='\t')
+    nv = tsv.NetworkTSV()
+    cutoffs = nv.get_fdr_cutoffs( 'black_6_go_4','2014.02.20.04:09:56',[.05] )
+    #        request.form["black_6_go_4"], 
+    #       request.form["timestamp"], alphas=[request.form['alpha']] )
+    valid = []
+    app.logger.warning(str(cutoffs))
+    app.logger.warning(table.columns)
+    for k,v in cutoffs.iteritems():
+        #valid.append( table[table[k] >= v[request.form['alpha']]['network'].to_list() )
+        valid += table[table[k] <= v['0.05']]['networks'].tolist()
+        app.logger.warning(len(set(valid)))
+    table = table.set_index('networks')
+    trimmed = np.log10(table.loc[list(set(valid)), :])
+
+    res = "{'table': %s, 'cutoffs': %s}" %(  trimmed.to_json(orient='split'), json.dumps(cutoffs) )
+    return  Response( trimmed.to_json(orient='split'), mimetype='application/json')
+    #jsonify({'table':]}) 
 
 @app.route('/biv/<net_source_id>/<source_dataframe>/<metadata_file>/<pathway_id>/<restype>')
 @app.route('/biv/<net_table>/<net_source_id>/<source_dataframe>/<metadata_file>/<pathway_id>/<restype>')
