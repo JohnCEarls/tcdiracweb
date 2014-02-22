@@ -8,6 +8,7 @@ import json
 import boto
 from boto.s3.key import Key
 import cPickle as pickle
+import random
 
 opj = os.path.join
 class TSVGen:
@@ -43,7 +44,14 @@ class TSVGen:
         self._sd = sd
         self._mi = mi
 
-    def gen_bivariate( self, pathway, by_rank=False ):
+    def jitter( self, ages, order=.001):
+        """
+        Given a list of ages, adjust each randomly by a small amount.
+        This is done to make each age unique, if we don't want aggregation.
+        """
+        return [age + (random.random()*order) for age in ages]
+
+    def gen_bivariate( self, pathway, by_rank=False, jitter=True ):
         genes = self._sd.get_genes( pathway )
         descriptions = []
         web_path = self._data_path 
@@ -54,8 +62,12 @@ class TSVGen:
                 for a1, a2 in itertools.combinations(alleles,2):
                     sid1 = self._mi.get_sample_ids( strain, a1)
                     ages1 = [self._mi.get_age( s ) for s in sid1] 
+                    if jitter:
+                        ages1 = self.jitter(ages1)
                     sid2 = self._mi.get_sample_ids( strain, a2)
                     ages2 =  [self._mi.get_age( s ) for s in sid2]
+                    if jitter:
+                        ages2 = self.jitter(ages2)
                     sub1 = self._sd.get_expression( sid1 )
                     pw_sub1 = sub1.loc[genes,:]
                     if by_rank:
@@ -131,6 +143,39 @@ class TSVGen:
                             descriptions.append(description)
             by_rank = True
         return json.dumps( sorted( descriptions , key=lambda x: x['avg_rank'] ))
+
+    def genNetworkGeneExpTables(self, pathway, by_rank=False): 
+        genes = self._sd.get_genes( pathway )
+        web_path = self._data_path 
+        rstr = 'rank' if by_rank else 'exp'
+        tables = {'type': rstr,
+                'pathway': pathway
+                }
+        for strain in self._mi.get_strains():
+            tables[strain] = {}
+            alleles = self._mi.get_nominal_alleles( strain )
+            for allele in self._mi.get_nominal_alleles( strain ):
+                tables[strain][allele] = {}
+                sid = self._mi.get_sample_ids( strain, allele)
+                ages = [self._mi.get_age( s ) for s in sid] 
+
+                ages = self.jitter(ages)
+                sub = self._sd.get_expression( sid )
+                pw_sub = sub.loc[genes,:]
+           
+                s_a_map = dict([(s,a) for s,a in zip( sid, ages )])
+                pw_sub.rename( columns=s_a_map, inplace=True )
+                pw_sub = pw_sub.reindex_axis(sorted(pw_sub.columns), axis=1)
+                if by_rank:
+                    pw_subT = pw_sub.transpose().rank(axis=1, ascending=False)
+                else:
+                    pw_subT = pw_sub.transpose()
+                tables[strain][allele]['samples'] = [sn for a,sn in sorted(zip(ages,sid))]
+                tables[strain][allele]['ages'] = pw_subT.index.tolist()
+                tables[strain][allele]['genes'] = pw_subT.columns.tolist()
+                tables[strain][allele]['table'] =  pw_subT.values.tolist()
+        return tables
+
 from datadirac.aggregate import DataForDisplay
 import tempfile
 from datadirac.utils import stat
@@ -235,16 +280,11 @@ class CrossTalkMatrix:
         else:
             for item in NetworkInfo.scan():
                 self.add_item(item)
-        print "have networks"
         n = len(self.edge_list)
         self.cross_talk = pandas.DataFrame(np.zeros((n,n)), 
             index=self.edge_list.keys(), columns=self.edge_list.keys())
 
-        ctr = 0
         for index, igeneset in self.edge_list.iteritems():
-            if ctr % 100 == 0:
-                print "%i of %i" % (ctr, n)
-            ctr += 1
             for column, ggeneset in self.edge_list.iteritems():
                 self.cross_talk.at[index, column] = len(igeneset.intersection( ggeneset )) / float(len(igeneset))
         return self.cross_talk
@@ -271,14 +311,91 @@ class CrossTalkMatrix:
                 networks = [n for _,n in networks]
             return self.cross_talk.loc[networks, networks]
 
+from datadirac.aggregate import RunGPUDiracModel, DataForDisplay
+import base64
+import json
+import pprint
+import boto
+import tempfile
+import pandas
+import json
+import numpy as np
+
+def get_sig(run_id, sig_level = .05):
+    """
+    Returns the significant networks at the given significance by 
+    Benjamini-Hochberg
+    """
+    myitem = None
+    for item in DataForDisplay.query(run_id):
+        if not myitem:
+            myitem = item
+        elif myitem and item.timestamp > myitem.timestamp:
+            myitem = item
+    bucket = myitem.data_bucket
+    pv_file = myitem.data_file
+    conn = boto.connect_s3()
+    b = conn.get_bucket(bucket)
+    k = b.get_key(pv_file)
+    with tempfile.TemporaryFile() as fp:
+        k.get_contents_to_file(fp)
+        fp.seek(0)
+        table = pandas.read_csv(fp, sep='\t')
+    nv = NetworkTSV()
+    cutoffs = nv.get_fdr_cutoffs( myitem.identifier, myitem.timestamp, [sig_level] )
+    valid = []
+    for k,v in cutoffs.iteritems():
+        for cut in v.itervalues():
+            valid += table[table[k] <= cut]['networks'].tolist()
+    return list(set(valid))
+
+def dumpExpression():
+    runs = {}
+    ignore = ['black_6_go_wt_v_q111']
+    for item in RunGPUDiracModel.scan():
+        if item.run_id not in ignore:
+            runs[item.run_id] =  json.loads(base64.b64decode( item.config ))
+    for k in runs.keys():
+        net_table = runs[k]['network_config']['network_table']
+        net_source_id = runs[k]['network_config']['network_source']
+        source_dataframe = runs[k]['dest_data']['dataframe_file']
+        metadata_file = runs[k]['dest_data']['meta_file']
+        source_bucket = runs[k]['dest_data']['working_bucket']
+        app_path = '/home/sgeadmin/.local/lib/python2.7/site-packages/tcdiracweb-0.1.0-py2.7.egg/tcdiracweb'
+        data_path = 'static/data'
+        runs['tsvargs'] = (net_table, net_source_id, source_dataframe, metadata_file, app_path, source_bucket, data_path)
+        runs['sig_nets'] = get_sig(k)
+        t = TSVGen( *runs['tsvargs'] )
+        for pw in runs['sig_nets']:
+            for rank in [True,False]:
+                for j in [True,False]:
+                    print t.genNetworkGeneExpTables(pw,  by_rank=rank)
+                    return
+            print pw
+
+def get_expression_from_run( run_id, timestamp, pathway, by_rank ):
+    res = RunGPUDiracModel.get( run_id, timestamp )
+    config = json.loads(base64.b64decode( res.config ))
+    net_table = config['network_config']['network_table']
+    net_source_id = config['network_config']['network_source']
+    source_dataframe = config['dest_data']['dataframe_file']
+    metadata_file = config['dest_data']['meta_file']
+    source_bucket = config['dest_data']['working_bucket']
+    app_path = '/home/sgeadmin/.local/lib/python2.7/site-packages/tcdiracweb-0.1.0-py2.7.egg/tcdiracweb'
+    data_path = 'static/data'
+    args =  (net_table, net_source_id, source_dataframe, metadata_file, 
+            app_path, source_bucket, data_path)
+    tsv = TSVGen( * args )
+    return t.genNetworkGeneExpTables( pathway, by_rank=by_rank )
 
 
 if __name__ == "__main__":
+    dumpExpression()
+    """
     base = "/home/earls3/secondary/tcdiracweb/tcdiracweb/static/data"
 
     #t = TSVGen( base + "/exp_mat_b6_wt_q111.pandas", base + "/metadata_b6_wt_q111.txt")
     #t.genBivariate('HISTONE_MODIFICATION')
-    """
     conn = boto.connect_s3()
     bucket = conn.get_bucket('ndp-hdproject-csvs')
     k = Key(bucket)
@@ -289,13 +406,12 @@ if __name__ == "__main__":
     di =  ntsv.get_display_info()
     for k in di:
         print ntsv.set_qval_table(k['identifier'], k['timestamp'])
-        print ntsv.get_fdr_cutoffs(k['identifier'], k['timestamp'], alphas=[.05])"""
+        print ntsv.get_fdr_cutoffs(k['identifier'], k['timestamp'], alphas=[.05])
     
     cm = CrossTalkMatrix()
-    """
     ctm =  cm.generate( networks=[('c2.cp.kegg.v4.0.symbols.gmt', 'KEGG_LEISHMANIA_INFECTION'),
         ('c2.cp.biocarta.v4.0.symbols.gmt', 'BIOCARTA_41BB_PATHWAY'), 
-        ('c2.cp.biocarta.v4.0.symbols.gmt', 'BIOCARTA_ACTINY_PATHWAY')] )"""
+        ('c2.cp.biocarta.v4.0.symbols.gmt', 'BIOCARTA_ACTINY_PATHWAY')] )
     network = ['KEGG_LEISHMANIA_INFECTION', 'BIOCARTA_41BB_PATHWAY', 'BIOCARTA_ACTINY_PATHWAY']
     print cm.get_crosstalk(network,  bucket='ndp-hdproject-csvs', 
-        file_name='crosstalk-biocartaUkeggUgoUreactome-pandas-dataframe.pkl')
+        file_name='crosstalk-biocartaUkeggUgoUreactome-pandas-dataframe.pkl')"""

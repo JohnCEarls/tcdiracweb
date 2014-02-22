@@ -165,6 +165,17 @@ def get_pvalues():
     res = "{'table': %s, 'cutoffs': %s}" %(  trimmed.to_json(orient='split'), json.dumps(cutoffs) )
     return  Response( trimmed.to_json(orient='split'), mimetype='application/json')
     #jsonify({'table':]}) 
+@app.route("/sig_level")
+def get_sig_level():
+    import tcdiracweb.utils.maketsv as tsv
+    run_id = 'black_6_go_4'
+    timestamp = '2014.02.20.04:09:56'
+    siglevel = [.05]
+    nv = tsv.NetworkTSV()
+    return jsonify( nv.get_fdr_cutoffs(run_id ,timestamp,siglevel ) )
+
+
+
 
 @app.route('/biv/<net_source_id>/<source_dataframe>/<metadata_file>/<pathway_id>/<restype>')
 @app.route('/biv/<net_table>/<net_source_id>/<source_dataframe>/<metadata_file>/<pathway_id>/<restype>')
@@ -185,6 +196,15 @@ def get_bivariate( pathway_id, net_source_id, source_dataframe,
     except Exception as e:
         app.logger.error( str(e) )
         return json.dumps({'error': str(e)})
+
+@app.route('/expression',methods=['GET'])
+def get_expression():
+    run_id = request.form['run_id']
+    timestamp = request.form['timestamp']
+    pathway = request.form['pathway']
+    by_rank = request.form['by_rank']
+    result = maketsv.get_expression_from_run(run_id, timestamp, pathway, by_rank)
+    return jsonify( result )
 
 @app.route('/comparegenes/<pathway_id>')
 def genedifference( pathway_id ):

@@ -14,17 +14,33 @@ AWS.config.sslEnabled = true;
 </script>
 
 <script type="text/template" id="pv-table">
-<table 
-<class="table table-condensed tablesorter" id="pvals" ><thead>cript>
+<div class-"panel-heading">
+    <h3 class="panel-title"><%= source_name %> </h3>
+</div>
+<table class="table table-condensed tablesorter" id="pvals" >
+    <thead>
+        <tr>
+            <th>Network</th>
+            <% _.each(columns, function( column ){ %>
+                <th id="<%= column.replace(' ', '_') %>">
+                    <%= column %>
+                </th> 
+            <% }); %>
+        </tr>
+    </thead>
+    <tbody>
+    </tbody>
+</table>
+</script>
+
 
 <script type="text/template" id="pv-row">
     <tr id="<%= network_name %>">
-        <td><%= network_name.split('_').join(' ') =%></td>
+        <td><%= network_name.split('_').join(' ') %></td>
         <% for(var i=0; i < values.length; i++) { %>
-            <td class="<% 
-                if(values[i] == 'unk' || values[i] <= sig[i]){ %>significant<%}
-                else {%>insignificant<% } %>">
-                <%= values[i] =>
+            <td class="<% if(values[i] == 'unk' || values[i] <= sig[i]){ %>
+                significant<% }else { %>insignificant<% } %>">
+                <%= values[i] %>
             </td>
         <% } %>
     </tr>
@@ -113,6 +129,7 @@ $(function(){
     }
   }
 
+  /**
   $.getJSON(url='{{url_for('get_pvalues')}}', function(data){
       console.log(data);
       htmlTable = get_table(data);
@@ -120,17 +137,17 @@ $(function(){
       $('#tcontainer').append(htmlTable);
       $('#pvals').tablesorter({textExtraction: myTextExtraction} );
       }
-      );
+      );**/
 
-var PvalueRow = BackBone.Model.extend({});
+var PvalueRow = Backbone.Model.extend({
+        });
 var PvalueTable = Backbone.Collection.extend({
-    defaults:{ source_name: ''},
+    defaults:{ source_name: 'butter'},
+    idAttribute: 'source_name',
     model : PvalueRow,
-    initialize :function(){
-        _.bindAll.apply(_, [this].concat(_.functions(this)))
-    },
+    url:"whatever",
     load : function( table, siglevel ){
-        this.set({columns, table.columns]})
+        this.set("columns", table.columns)
         for(var i=0; i<table.index.length;i++){
             this.addRow( table.index[i], table.data[i], siglevel );
         }
@@ -138,20 +155,40 @@ var PvalueTable = Backbone.Collection.extend({
     },
 
     addRow : function( net_name, val, siglevel ){
-        var pv = new PvalueRow({network_name:net_name,
-                values : val, sig:siglevel})
-        this.collection.add( pv );
+
+        var pv = new PvalueRow({id:net_name,
+                    network_name:net_name,
+                    values : val, 
+                    sig:siglevel});
+        this.add( pv );
     }
-        
-    
 
     });
-var PvalueTableView = Backbone.View.Extend({});
-var PvalueRowView = BackoneView.Extend({});
-
-
+var PvalueTableView = Backbone.View.extend({
+    el:"#tcontainer",
+    template: _.template($('pv-table').html())
+   initialize : function(){
+   this.collection.bind('add', this.processPvalue);
+   var outputHtml = this.template(this.model.toJSON());
+   
+   this.$el.append(outputHtml);
+   },
+processPvalue : function( ppv ){
+    var ppview = new PvalueRowView( {model: ppv} );
+    ppview.render();
+    this.$el.find( 'tbody' ).append(ppview.el);
+}
 
 });
+var PvalueRowView = Backbone.View.extend({});
 
+ptable = new PvalueTable({source_name:'butter'});
+$.when($.getJSON('{{url_for('get_pvalues')}}'),
+        $.getJSON(url='{{url_for('get_sig_level')}}'))
+.done(function(r1, r2){
+
+        ptable.load(r1[0], r2[0]);
+        });
+       
 </script>
 {% endblock %}
