@@ -9,6 +9,8 @@ import boto
 from boto.s3.key import Key
 import cPickle as pickle
 import random
+import re
+import string
 
 opj = os.path.join
 class TSVGen:
@@ -387,6 +389,44 @@ def get_expression_from_run( run_id, timestamp, pathway, by_rank ):
             app_path, source_bucket, data_path)
     tsv = TSVGen( * args )
     return t.genNetworkGeneExpTables( pathway, by_rank=by_rank )
+
+def dataframe_to_backgrid( dataframe, type_map={}, sorter=None ):
+    columns = []
+    index_name = dataframe.index.name
+    def df2bgtype( column ):
+        dftype = column.dtype
+        name = column.name
+        if name in type_map:
+            return type_map[name]
+        if dftype == object:
+            return 'string'
+        elif dftype == int:
+            return 'integer'
+        elif dftype == float:
+            return 'number'
+    
+    def pretty_name( ugly_name ):
+        prettier = ' '.join(re.split( r'[_-]', ugly_name))
+        return string.capwords( prettier )
+        
+    columns.append({ 'name':'id',
+        'label': index_name if index_name else 'Index',
+        'editable': False,
+        'cell' : df2bgtype(dataframe.index)
+        })
+    for i in range(len(dataframe.columns)):
+        columns.append({'name': dataframe.iloc[:,i].name,
+            'label': pretty_name(dataframe.iloc[:,i].name),
+            'cell': df2bgtype( dataframe.iloc[:,i] )
+                        })
+    table = []
+    for indx in dataframe.index:
+        row = {'id':indx}
+        for col in dataframe.columns:
+            row[col] = dataframe.at[indx,col]
+        table.append(row)
+
+    return { 'columns' : columns, 'table': table }
 
 
 if __name__ == "__main__":

@@ -141,6 +141,7 @@ def get_pvalues():
 
     df = 'black_6_go_4-joined-2014.02.20.04:09:56.tsv' #request.form["data_file"]
     bucket = 'ndp-hdproject-csvs' #request.form["data_bucket"]
+    output_format = 'backgrid' # request.form["output_format"]
     conn = boto.connect_s3()
     b = conn.get_bucket(bucket)
     k = b.get_key(df)
@@ -160,7 +161,12 @@ def get_pvalues():
         valid += table[table[k] <= v['0.05']]['networks'].tolist()
         app.logger.warning(len(set(valid)))
     table = table.set_index('networks')
+
     trimmed = np.log10(table.loc[list(set(valid)), :])
+    if output_format == 'backgrid':
+        return Response( json.dumps(tsv.dataframe_to_backgrid(trimmed)), 
+                mimetype='application/json')
+
 
     res = "{'table': %s, 'cutoffs': %s}" %(  trimmed.to_json(orient='split'), json.dumps(cutoffs) )
     return  Response( trimmed.to_json(orient='split'), mimetype='application/json')

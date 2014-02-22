@@ -9,6 +9,11 @@ AWS.config.region = 'us-east-1';
 AWS.config.credentials.params.WebIdentityToken = "{{session['id_token']}}";
 AWS.config.sslEnabled = true;
 </script>
+<link rel="stylesheet" href="{{ 
+    url_for('static', filename='js/backgrid.css')  }}" />
+
+    <script type="text/javascript" src="{{
+        url_for('static', filename='js/backgrid.js')}}"></script>
 <script type="text/template" id="net-display">
     <strong><%= network %></strong> <%= timestamp %>
 </script>
