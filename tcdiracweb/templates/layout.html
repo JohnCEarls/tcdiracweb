@@ -1,55 +1,53 @@
 <!doctype html>
 <html>
     <head>
+        <!-- Just for me -->
+        <link rel="shortcut icon" href="{{ 
+            url_for('static', filename='images/purpleheart.ico')}}">
         <title>{% block title %}{% endblock %} - time-course Dirac</title>
         {% block head %}{% endblock %} 
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <!-- Bootstrap -->
-        <link rel="shortcut icon" href="{{ 
-            url_for('static', filename='images/purpleheart.ico')}}">
+        <!-- CSS Libraries -->    
         <link href="{{ url_for('static', 
-            filename='css/bootstrap.min.css') }}" rel="stylesheet"/>
-        <style>
-        /* Custom page footer */
-            .footer {
-                padding-top: 19px;
-                color: #777;
-                border-top: 1px solid #e5e5e5;
-                text-align: right;
-            }
-
-        </style>
-        <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
-        <link rel="stylesheet" href="{{ url_for('static', filename='tipsy.css')}}" />
+            filename='css/bootstrap.css') }}" rel="stylesheet"/>
+        
+        <link rel="stylesheet" href="{{ url_for('static', filename='css/backgrid.css')}}" />
+        <link rel="stylesheet" href="{{ url_for('static', filename='css/tipsy.css')}}" />
+        
+        <!-- CSS Custom -->
+        <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+        <!--JS Libraries and frameworks -->
         <script type="text/javascript">
             $SCRIPT_ROOT = {{ request.script_root|tojson|safe }};
         </script>
         <script type="text/javascript" src="{{ 
-            url_for('static', filename='sprintf.js') }}"></script>
+            url_for('static', filename='js/lib/sprintf.js') }}"></script>
         <script type="text/javascript" src="{{ 
-            url_for('static', filename='js/underscore-min.js') }}"></script>
+            url_for('static', filename='js/lib/underscore.js') }}"></script>
+        <script type="text/javascript" src="{{ 
+            url_for('static', filename='js/lib/jquery-2.1.0.js') }}"></script>
+        <script type="text/javascript" src="{{ 
+            url_for('static', filename='js/lib/backbone.js') }}"></script>
+        <script type="text/javascript" src="{{ 
+            url_for('static', filename='js/lib/aws-sdk.js') }}">
+        </script>
+        <script type="text/javascript" src="{{ 
+            url_for('static', filename='js/lib/jquery.metadata.js') }}"></script>
+        <script type="text/javascript" src="{{ 
+            url_for('static', filename='js/lib/jquery.tablesorter.js') }}"></script>
+        <script type="text/javascript" src="{{ 
+            url_for('static', filename='js/lib/jquery.tipsy.js') }}">
+        </script>
+        <script type="text/javascript" src="{{ 
+            url_for('static', filename='js/lib/bootstrap.js') }}"></script>
+        <script type="text/javascript" src="{{ 
+            url_for('static', filename='js/lib/d3.v3.js') }}"></script>
 
-        <script type="text/javascript" src="{{ 
-            url_for('static', filename='jquery-2.1.0.js') }}"></script>
-        <script type="text/javascript" src="{{ 
-            url_for('static', filename='js/backbone-min.js') }}"></script>
-        <script type="text/javascript" src="{{ 
-            url_for('static', filename='aws-sdk-2.0.0-rc8.js') }}">
-        </script>
-        <script type="text/javascript" src="{{ 
-            url_for('static', filename='jquery.metadata.js') }}"></script>
-        <script type="text/javascript" src="{{ 
-            url_for('static', filename='jquery.tablesorter.js') }}"></script>
-        <script type="text/javascript" src="{{ 
-                url_for('static', filename="jquery.tipsy.js") }}">
-        </script>
-        <script type="text/javascript" src="{{ 
-            url_for('static', filename='js/bootstrap.min.js') }}"></script>
-        <script type="text/javascript" src="{{ 
-            url_for('static', filename='d3.v3.js') }}"></script>
+        <!-- JS custom -->
         <script type="text/javascript" src="{{ 
             url_for('static', filename='js/messages.js') }}"></script>
-        
+        {% block headjs %}
+        {% endblock %}
     </head>
     <body>
         {% with messages = get_flashed_messages(with_categories=true) %}
@@ -68,56 +66,56 @@
                 </div>
                 {% endif %}
                 {% endfor %}
-        </div>
         {% endif %}
         {% endwith %}
         <div id="content" class="container">
-<nav class="navbar navbar-default" role="navigation">
-  <div class="container-fluid">
-    <!-- Brand and toggle get grouped for better mobile display -->
-    <div class="navbar-header">
-      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
-        <span class="sr-only">Toggle navigation</span>
-        <span class="icon-bar"></span>
-        <span class="icon-bar"></span>
-        <span class="icon-bar"></span>
-      </button>
-      <a class="navbar-brand" href="#">Adversary</a>
-    </div>
+            <nav class="navbar navbar-default" role="navigation">
+              <div class="container-fluid">
+                <!-- Brand and toggle get grouped for better mobile display -->
+                <div class="navbar-header">
+                  <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+                    <span class="sr-only">Toggle navigation</span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                  </button>
+                  <a class="navbar-brand" href="#"><strong>AUREA</strong> Nebula</a>
+                </div>
 
-    <!-- Collect the nav links, forms, and other content for toggling -->
-    <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
-      <ul class="nav navbar-nav">
-        <li id="page-index"> <a href="{{url_for('index') }}" class="btn btn-default" id="home">Home</a></li>
-        <li>
-                    <a href="{{url_for('logout')}}" class="btn btn-default" id="logout">Logout</a>
-        </li>
-        <li class="dropdown">
-          <a href="#" class="dropdown-toggle" data-toggle="dropdown">Dropdown <b class="caret"></b></a>
-          <ul class="dropdown-menu">
-            <li><a href="#">Action</a></li>
-            <li><a href="#">Another action</a></li>
-            <li><a href="#">Something else here</a></li>
-            <li class="divider"></li>
-            <li><a href="#">Separated link</a></li>
-            <li class="divider"></li>
-            <li><a href="#">One more separated link</a></li>
-          </ul>
-        </li>
-      </ul>
-      <ul class="nav navbar-nav navbar-right">
-        <li id="page-clustermain"><a href="{{url_for('clustermain') }}" class="btn btn-default" id="cluster-manager">Cluster Manager</a></li>
-        <li class="dropdown">
-          <a href="#" class="dropdown-toggle" data-toggle="dropdown">Context<b class="caret"></b></a>
-          <ul class="dropdown-menu" id="page-specific-dd">
-          </ul>
-        </li>
-      </ul>
-    </div><!-- /.navbar-collapse -->
-  </div><!-- /.container-fluid -->
-</nav>
-            {% block content %}{% endblock %}
+                <!-- Collect the nav links, forms, and other content for toggling -->
+                <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+                  <ul class="nav navbar-nav">
+                    <li id="page-index"> <a href="{{url_for('index') }}" class="btn btn-default" id="home">Home</a></li>
+                    <li>
+                                <a href="{{url_for('logout')}}" class="btn btn-default" id="logout">Logout</a>
+                    </li>
+                    <li class="dropdown">
+                      <a href="#" class="dropdown-toggle" data-toggle="dropdown">Dropdown <b class="caret"></b></a>
+                      <ul class="dropdown-menu">
+                        <li><a href="#">Action</a></li>
+                        <li><a href="#">Another action</a></li>
+                        <li><a href="#">Something else here</a></li>
+                        <li class="divider"></li>
+                        <li><a href="#">Separated link</a></li>
+                        <li class="divider"></li>
+                        <li><a href="#">One more separated link</a></li>
+                      </ul>
+                    </li>
+                  </ul>
+                  <ul class="nav navbar-nav navbar-right">
+                    <li id="page-clustermain"><a href="{{url_for('clustermain') }}" class="btn btn-default" id="cluster-manager">Cluster Manager</a></li>
+                    <li class="dropdown">
+                      <a href="#" class="dropdown-toggle" data-toggle="dropdown">Context<b class="caret"></b></a>
+                      <ul class="dropdown-menu" id="page-specific-dd">
+                      </ul>
+                    </li>
+                  </ul>
+                </div><!-- /.navbar-collapse -->
+              </div><!-- /.container-fluid -->
+            </nav>
+
+        {% block content %}{% endblock %}
         <div id="footer" class="footer">{% block footer %}&copy; Copyright 2014 by John C Earls{% endblock %} </div>
-         </div>
+    </div>
     </body>
 </html>
