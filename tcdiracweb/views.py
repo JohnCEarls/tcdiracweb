@@ -405,6 +405,25 @@ def sc_log_update():
     else:
         return jsonify({'status': 'unchanged'})
 
+@app.route('/api/Network', methods=['GET'])
+@app.route('/api/Network/<name>', methods=['GET'])
+def get_network(name=None):
+    from dbModels.Networks import Network
+    from dbModels.utils import item_to_dict
+    result = {}
+    if name is None:
+        result = []
+        for network in Network.scan():
+            result.append(item_to_dict( network ))
+    else:
+        result = item_to_dict( Network.get( name ) )
+    return Response( json.dumps( result ), mimetype='application/json')
+
+
+
+
+
+
 def check_id():
     if 'user_data' in session and 'id' in session['user_data']:
         me = google.get('userinfo')
