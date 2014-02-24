@@ -1,4 +1,7 @@
 def item_to_dict( item ):
+	"""
+	Converts a pynamodb item to a dictionary
+	"""
     our_dict = {}
     for k,v in a.iteritems():
         if type(v) is set:
