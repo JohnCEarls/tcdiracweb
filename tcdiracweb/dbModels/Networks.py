@@ -14,10 +14,10 @@ class Network( Model ):
     name = UnicodeAttribute( hash_key=True )
     source = UnicodeAttribute( default='' )
     information_uri = UnicodeAttribute( default='')
-    geneIds = UnicodeSetAttribute( default=[] )
+    geneIDs = UnicodeSetAttribute( default=[] )
     source_index = SourceIndex()
 
 if __name__ == "__main__":
     if not Network.exists():
         Network.create_table(read_capacity_units=2, write_capacity_units=1, wait=True)
-
+    

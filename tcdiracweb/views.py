@@ -8,33 +8,13 @@ from functools import wraps
 from werkzeug.security import generate_password_hash, \
              check_password_hash
 import multiprocessing
-
+import boto.utils
+from tcdiracweb.utils.app_init import crossdomain, secure_page
+from tcdiracweb.apis import api
 
 google = tcdiracweb.utils.app_init.get_google( app )
 app.logger.setLevel(logging.DEBUG)
-import boto.utils
-
-def secure_page(f):
-    @wraps(f)
-    def decorated_function( *args, **kwargs ):
-        if 'user_data' not in session:
-            flash('Credentials corrupted', 'error')
-            return redirect(url_for('logout'))
-
-        if u_man.user_registered(session['user_data']['id']):
-            if  u_man.user_active(session['user_data']['id']):
-                if check_id():
-                    return f(*args, **kwargs)
-                else:
-                    flash('Credentials corrupted', 'error')
-                    return redirect(url_for('logout'))
-            else:
-                flash(('User not active. Contact john.c.earls@gmail.com' 
-                ' to activate.'), 'warning')
-        else:
-            flash('Not Registered.  Click Register.')
-        return redirect(url_for('login'))
-    return decorated_function
+app.register_blueprint( api, url_prefix='/api' )
 
 @app.route('/')
 def index():
@@ -116,6 +96,7 @@ def show_net_results():
 
 @app.route('/netresultsfordisplay')
 def get_nets_for_display():
+
     from datadirac.aggregate import DataForDisplay
     import json
     res =  DataForDisplay.scan()
@@ -405,25 +386,6 @@ def sc_log_update():
     else:
         return jsonify({'status': 'unchanged'})
 
-@app.route('/api/Network', methods=['GET'])
-@app.route('/api/Network/<name>', methods=['GET'])
-def get_network(name=None):
-    from dbModels.Networks import Network
-    from dbModels.utils import item_to_dict
-    result = {}
-    if name is None:
-        result = []
-        for network in Network.scan():
-            result.append(item_to_dict( network ))
-    else:
-        result = item_to_dict( Network.get( name ) )
-    return Response( json.dumps( result ), mimetype='application/json')
-
-
-
-
-
-
 def check_id():
     if 'user_data' in session and 'id' in session['user_data']:
         me = google.get('userinfo')
@@ -432,5 +394,3 @@ def check_id():
             app.logger.debug(   session['user_data']['id'] )
             return u_man.hash_id( me.data['id'] ) == session['user_data']['id']
     return False
-
-
