@@ -6,7 +6,6 @@ from pynamodb.exceptions import DoesNotExist
 
 api = Blueprint('api', __name__, template_folder = 'templates', static_folder = 'static')
 
-
 @api.errorhandler(404)
 def not_found(error):
     current_app.logger.error("%r" % error)
@@ -53,3 +52,15 @@ def cluster_get( cluster_name = None ):
         if res:
             return Response( json.dumps([r.attribute_values for r in res]), 
                     mimetype = 'application/json')
+
+@api.route( '/awscred', methods=['GET'])
+def google_id():
+    try:
+        cred = {'RoleArn':'arn:aws:iam::686625824462:role/aurea-nebula-google-web-role',
+                'WebIdentityToken': session['id_token']
+        }
+        return Response(
+            json.dumps(cred),
+            mimetype='application/json')
+    except:
+        abort(404) 
