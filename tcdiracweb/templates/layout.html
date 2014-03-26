@@ -16,6 +16,7 @@
         
         <!-- CSS Custom -->
         <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+        {% block headjs %}
         <!--JS Libraries and frameworks -->
         <script type="text/javascript">
             $SCRIPT_ROOT = {{ request.script_root|tojson|safe }};
@@ -46,7 +47,6 @@
         <!-- JS custom -->
         <script type="text/javascript" src="{{ 
             url_for('static', filename='js/messages.js') }}"></script>
-        {% block headjs %}
         {% endblock %}
     </head>
     <body>

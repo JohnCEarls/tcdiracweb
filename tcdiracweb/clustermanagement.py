@@ -14,12 +14,12 @@ cm = Blueprint('cm', __name__, template_folder = 'templates', static_folder = 's
 @secure_page
 def clustermain():
     instance_id =  boto.utils.get_instance_identity()['document']['instanceId']
-    return render_template('clustermain.html', instance_id=instance_id)
+    return render_template('clustermain.html', instance_id=instance_id, app=current_app)
 
 @cm.route('/createclusterconfig', methods=['POST','GET'])
 @secure_page
 def scgenerate_config():
-    app.logger.debug(repr(request))
+    current_app.logger.debug(repr(request))
     try:
         if request.method == 'POST':
             allowed = ['cluster_size', 'cluster_prefix', 'region', 'availability_zone','spot_bid']
@@ -32,8 +32,8 @@ def scgenerate_config():
             else:
                 args['force_spot_master'] = False
             ms = AdversaryMasterServer()
-            app.logger.debug( str(args) )
-            app.logger.debug( str(request.form))
+            current_app.logger.debug( str(args) )
+            current_app.logger.debug( str(request.form))
             if request.form['cluster_type'] == 'data':
                 cluster_name = ms.configure_data_cluster(**args)
             elif request.form['cluster_type'] == 'gpu':
@@ -46,7 +46,7 @@ def scgenerate_config():
                     'error': 'No POST Request found'}
             return jsonify( message )
     except Exception as e:
-        app.logger.error("%r" % e)
+        current_app.logger.error("%r" % e)
         message = {'status' : 'error',
             'error': 'Server Error'}
         return jsonify( message )
@@ -74,7 +74,7 @@ def cluster_get( cluster_name = None ):
             else:
                 abort(400)
     except Exception as e:
-        app.logger.error("%r" % e)
+        current_app.logger.error("%r" % e)
         abort(400)
 
 
@@ -89,7 +89,7 @@ def create_cluster():
         try:
             ams = AdversaryServer(instance_id, cluster_name, no_create=True )
         except SCConfigError as e:
-            app.logger.error("Attempt to create unkown cluster: [%r]" % e)
+            current_app.logger.error("Attempt to create unkown cluster: [%r]" % e)
             return jsonify({'status': 'error', 'error': 'Invalid Request'})
         s_bin = '/home/sgeadmin/.local/bin/starcluster'
         url =  'https://price.adversary.us/scconfig'
@@ -113,7 +113,7 @@ def gpu_cluster():
     instance_id =  boto.utils.get_instance_identity()['document']['instanceId']
     master_name = instance_id 
     valid_actions = ['start', 'stop', 'status']
-    app.logger.error( "%r" % request.form )
+    current_app.logger.error( "%r" % request.form )
     if request.method == 'POST':
         cluster_name = request.form['cluster_name']
         if request.form['component'] == 'logserver-daemon':
@@ -160,7 +160,7 @@ def data_cluster():
     instance_id =  boto.utils.get_instance_identity()['document']['instanceId']
     master_name = instance_id 
     valid_actions = ['start', 'stop', 'status']
-    app.logger.error( "%r" % request.form )
+    current_app.logger.error( "%r" % request.form )
     if request.method == 'POST':
         cluster_name = request.form['cluster_name']
         if request.form['component'] == 'terminate':

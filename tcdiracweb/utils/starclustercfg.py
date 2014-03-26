@@ -34,6 +34,7 @@ class AdversaryMaster(Model):
     key_location = UnicodeAttribute()
 
 class StarclusterConfig(Model):
+    region='us-east-1'
     table_name='sc-adversary-config'
     master_name = UnicodeAttribute( hash_key=True )
     cluster_name = UnicodeAttribute( range_key=True )

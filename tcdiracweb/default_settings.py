@@ -7,6 +7,7 @@ class Config(object):
     STARCLUSTER_KEY_LOCATION = '/home/sgeadmin'
     GOOGLE_ID = '580557226207-ukigt720g3834henmlj546ucld47elnk.apps.googleusercontent.com'
     GOOGLE_SECRET = 'G4QqN3B6Skock2eNiJfEk527'
+    AWS_ROLE_ARN_GOOGLE = 'arn:aws:iam::686625824462:role/aurea-nebula-google-web-role' 
     LOGGING_LEVEL = logging.INFO
 
 
