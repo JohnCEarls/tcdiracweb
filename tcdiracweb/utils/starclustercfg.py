@@ -23,55 +23,50 @@ from collections import defaultdict
 class SCConfigError(Exception):
     pass
 
-class AdversaryMaster(Model):
-    table_name = 'adversary-master'
+class ANMaster(Model):
+    table_name = 'aurea-nebula-master'
     master_name = UnicodeAttribute( hash_key=True )
     date_created = UTCDateTimeAttribute( range_key=True, default=datetime.utcnow() )
-    region = UnicodeAttribute()
-    data_clusters = UnicodeSetAttribute(default=[])
-    gpu_clusters = UnicodeSetAttribute(default=[])
+    aws_region = UnicodeAttribute()
     key_pairs = JSONAttribute(default={})
     key_location = UnicodeAttribute()
 
-class StarclusterConfig(Model):
-    region='us-east-1'
-    table_name='sc-adversary-config'
+class ANWorkerConfig(Model):
+    table_name='aurea-nebula-worker'
     master_name = UnicodeAttribute( hash_key=True )
     cluster_name = UnicodeAttribute( range_key=True )
-    cluster_master_instance = UnicodeAttribute(default='')
     cluster_type = UnicodeAttribute(default='data')
     node_type = UnicodeAttribute(default='m1.xlarge')
-    region = UnicodeAttribute(default='')
+    aws_region = UnicodeAttribute(default='')
     num_nodes = NumberAttribute(default=0)
     nodes = UnicodeSetAttribute(default=[])
-    active = NumberAttribute(default=0)
-    ready = NumberAttribute(default=0)
+    state = NumberAttribute(default=0)
     config = UnicodeAttribute(default='')
     startup_log = UnicodeAttribute(default='')
     startup_pid = UnicodeAttribute(default='')
 
 
-class AdversaryMasterServer:
+class ANMasterServer:
     def __init__(self, key_location='/home/sgeadmin'):
         md = boto.utils.get_instance_metadata()
         name = md['instance-id']
 
-        region = md['placement']['availability-zone'][:-1]
-        if not AdversaryMaster.exists():
-            AdversaryMaster.create_table( read_capacity_units=2, write_capacity_units=1, wait=True)
-        items = [item for item in AdversaryMaster.scan( master_name__eq=name) if item.region == region]
+        aws_region = md['placement']['availability-zone'][:-1]
+        if not ANMaster.exists():
+            ANMaster.create_table( read_capacity_units=2, write_capacity_units=1, wait=True)
+        items = [item for item in ANMaster.scan( master_name__eq=name) if item.aws_region == aws_region]
         if items:
             self._model = max( items, key=lambda x: x.date_created)
         else:
             #creating new ams
-            self._model = AdversaryMaster( name )
-            self._model.region = md['placement']['availability-zone'][:-1]
+            self._model = ANMaster( name )
+            self._model.aws_region = md['placement']['availability-zone'][:-1]
             self._model.key_location = key_location
             self._model.save()
 
     @property
-    def region( self ):
-        return self._model.region
+    def aws_region( self ):
+        return self._model.aws_region
 
     @property
     def master_name(self):
@@ -79,32 +74,32 @@ class AdversaryMasterServer:
 
     @property
     def unstarted_data_clusters(self):
-        clusters = StarclusterConfig.scan(master_name__eq=self.master_name)
-        return [AdversaryDataServer( self.master_name, cluster.cluster_name )
+        clusters = ANWorkerConfig.scan(master_name__eq=self.master_name)
+        return [ANDataServer( self.master_name, cluster.cluster_name )
                 for cluster in clusters if cluster.active == 0 and
                 cluster.cluster_type=='data']
 
     @property
     def unstarted_gpu_clusters(self):
-        clusters = StarclusterConfig.scan(master_name__eq=self.master_name)
-        return [AdversaryGPUServer( self.master_name, cluster.cluster_name )
+        clusters = ANWorkerConfig.scan(master_name__eq=self.master_name)
+        return [ANGPUServer( self.master_name, cluster.cluster_name )
                 for cluster in clusters if cluster.active == 0 and
                 cluster.cluster_type=='gpu']
 
-    def get_key( self, region):
+    def get_key( self, aws_region):
         self._model.refresh()
-        if region not in self._model.key_pairs:
-            key_location ,new_key = self._gen_key( region )
+        if aws_region not in self._model.key_pairs:
+            key_location ,new_key = self._gen_key( aws_region )
             kp = self._model.key_pairs
-            kp[region] = new_key
+            kp[aws_region] = new_key
             self._model.key_pairs = kp
             self._model.key_location = key_location
             self._model.save()
-        return self._model.key_pairs[region]
+        return self._model.key_pairs[aws_region]
 
-    def _gen_key(self, region='us-east-1', key_location= '/home/sgeadmin' ):
-        ec2 = boto.ec2.connect_to_region( region )
-        key_name = 'sc-key-%s-%s' % (self._model.master_name, region )
+    def _gen_key(self, aws_region='us-east-1', key_location= '/home/sgeadmin' ):
+        ec2 = boto.ec2.connect_to_region( aws_region )
+        key_name = 'sc-key-%s-%s' % (self._model.master_name, aws_region )
         k_file = '.'.join( [ key_name, 'pem' ])
 
         if os.path.isfile(os.path.join(key_location,k_file )) and \
@@ -122,7 +117,7 @@ class AdversaryMasterServer:
         os.chmod( os.path.join( key_location, k_file ), 0600 )
         return (key_location , key_name)
 
-    def _aws_info_config( self,config, region):
+    def _aws_info_config( self,config, aws_region):
         md = boto.utils.get_instance_metadata()
         config.add_section('aws info')
         sc = md['iam']['security-credentials']['gpu-data-instance']
@@ -133,10 +128,10 @@ class AdversaryMasterServer:
         config.set('aws info', 'AWS_CONFIG_TABLE', 'sc_config')
         config.set('aws info', 'AWS_META_BUCKET','ndprice-aws-meta')
         config.set('aws info', 'AWS_SPOT_TABLE', 'spot_history')
-        config.set('aws info', 'AWS_REGION_NAME', region)
+        config.set('aws info', 'AWS_REGION_NAME', aws_region)
         return config
 
-    def _key_config( self, config, region):
+    def _key_config( self, config, aws_region):
         key = self.get_key(region)
         key_location = self._model.key_location
         config.add_section( 'key %s' % key )
@@ -146,7 +141,7 @@ class AdversaryMasterServer:
 
     def _data_cluster_config( self, config,
             cluster_prefix='gpu-data',
-            region='us-east-1',
+            aws_region='us-east-1',
             cluster_size=10,
             cluster_shell='bash',
             node_image_id='ami-0773776e',
@@ -167,7 +162,7 @@ class AdversaryMasterServer:
 
     def _gpu_cluster_config( self,  config,
             cluster_prefix='gpu-server',
-            region='us-east-1',
+            aws_region='us-east-1',
             cluster_size=1,
             cluster_shell='bash',
             node_image_id='ami-4f5c6126',
@@ -188,7 +183,7 @@ class AdversaryMasterServer:
 
     def _cluster_config( self, config,
             cluster_prefix='gpu-data',
-            region='us-east-1',
+            aws_region='us-east-1',
             cluster_size=10,
             cluster_shell='bash',
             node_image_id='ami-9b0924f2',
@@ -207,7 +202,7 @@ class AdversaryMasterServer:
         ctr = 0
         cluster_name = '%s-%i' % ( cluster_prefix, ctr)
         existing_clusters =[item.cluster_name for item in
-                StarclusterConfig.query( self._model.master_name,
+                ANWorkerConfig.query( self._model.master_name,
                     cluster_name__begins_with=cluster_prefix)]
 
         while cluster_name in existing_clusters:
@@ -241,24 +236,24 @@ class AdversaryMasterServer:
         if kwargs is None:
             kwargs = {}
         if 'region' not in kwargs:
-            region = self.region
+            aws_region = self.aws_region
         else:
-            region = kwargs['region']
+            aws_region = kwargs['region']
         if 'cluster_prefix' not in kwargs:
             cluster_prefix = 'gpu-data'
         else:
             cluster_prefix = kwargs['cluster_prefix']
         config = ConfigParser.RawConfigParser()
-        config = self._aws_info_config( config, region )
-        config = self._key_config( config , region)
+        config = self._aws_info_config( config, aws_region )
+        config = self._key_config( config , aws_region)
         kwargs['config'] = config
         kwargs['cluster_prefix'] = cluster_prefix
-        kwargs['region'] = region
+        kwargs['region'] = aws_region
         cluster_name, config = self._data_cluster_config( **kwargs )
         stringIO = StringIO.StringIO()
         config.write( stringIO )
         config_str = stringIO.getvalue()
-        ads = AdversaryDataServer( self._model.master_name, cluster_name, region )
+        ads = ANDataServer( self._model.master_name, cluster_name, aws_region )
         ads.set_config( config_str )
         ads.set_num_nodes( config.getint( 'cluster %s' % cluster_name, 'cluster_size') )
         return cluster_name
@@ -267,35 +262,35 @@ class AdversaryMasterServer:
         if kwargs is None:
             kwargs = {}
         if 'region' not in kwargs:
-            region = self.region
+            aws_region = self.aws_region
         else:
-            region = kwargs['region']
+            aws_region = kwargs['region']
         if 'cluster_prefix' not in kwargs:
             cluster_prefix = 'gpu-server'
         else:
             cluster_prefix = kwargs['cluster_prefix']
         config = ConfigParser.RawConfigParser()
-        config = self._aws_info_config( config, region )
-        config = self._key_config( config , region)
+        config = self._aws_info_config( config, aws_region )
+        config = self._key_config( config , aws_region)
         kwargs['config'] = config
         kwargs['cluster_prefix'] = cluster_prefix
-        kwargs['region'] = region
+        kwargs['region'] = aws_region
         cluster_name, config = self. _gpu_cluster_config( **kwargs )
         stringIO = StringIO.StringIO()
         config.write( stringIO )
         
         config_str = stringIO.getvalue()
-        ads = AdversaryGPUServer( self._model.master_name, cluster_name, region )
+        ads = ANGPUServer( self._model.master_name, cluster_name, aws_region )
         ads.set_config( config_str )
         ads.set_num_nodes( config.getint( 'cluster %s' % cluster_name, 'cluster_size') )
         return cluster_name
 
-class AdversaryServer:
-    def __init__(self, master_name, cluster_name, region=None, no_create=False):
-        if not StarclusterConfig.exists():
-            StarclusterConfig.create_table( read_capacity_units=2, write_capacity_units=1, wait=True)
+class ANServer:
+    def __init__(self, master_name, cluster_name, aws_region=None, no_create=False):
+        if not ANWorkerConfig.exists():
+            ANWorkerConfig.create_table( read_capacity_units=2, write_capacity_units=1, wait=True)
         try:
-            sc_config = StarclusterConfig.get( master_name, cluster_name )
+            sc_config = ANWorkerConfig.get( master_name, cluster_name )
         except:
             sc_config = None
         if sc_config:
@@ -303,12 +298,12 @@ class AdversaryServer:
         elif no_create:
             raise SCConfigError("%s, %s does not exist" % (master_name, cluster_name))
         else:
-            self._model = self._create_model( master_name, cluster_name, region )
+            self._model = self._create_model( master_name, cluster_name, aws_region )
         self.log_bucket = 'ndp-adversary'
 
-    def _create_model(self, master_name, cluster_name, region):
-        sc_model = StarclusterConfig( master_name, cluster_name )
-        sc_model.region = region
+    def _create_model(self, master_name, cluster_name, aws_region):
+        sc_model = ANWorkerConfig( master_name, cluster_name )
+        sc_model.aws_region = aws_region
         sc_model.cluster_type='data'
         sc_model.save()
         return sc_model
@@ -392,19 +387,19 @@ class AdversaryServer:
 
 
 
-class AdversaryDataServer(AdversaryServer):
-    def _create_model(self, master_name, cluster_name, region):
-        sc_model = StarclusterConfig( master_name, cluster_name )
-        sc_model.region = region
+class ANDataServer(ANServer):
+    def _create_model(self, master_name, cluster_name, aws_region):
+        sc_model = ANWorkerConfig( master_name, cluster_name )
+        sc_model.aws_region = aws_region
         sc_model.cluster_type='data'
         sc_model.node_type='m1.xlarge'
         sc_model.save()
         return sc_model
 
-class AdversaryGPUServer(AdversaryServer):
-    def _create_model(self, master_name, cluster_name, region):
-        sc_model = StarclusterConfig( master_name, cluster_name )
-        sc_model.region = region
+class ANGPUServer(ANServer):
+    def _create_model(self, master_name, cluster_name, aws_region):
+        sc_model = ANWorkerConfig( master_name, cluster_name )
+        sc_model.aws_region = aws_region
         sc_model.cluster_type='gpu'
         sc_model.node_type='cg1.4xlarge'
         sc_model.save()
@@ -412,7 +407,7 @@ class AdversaryGPUServer(AdversaryServer):
 
 
 def run_sc( starcluster_bin, url, master_name,cluster_name ):
-    adv_ser = AdversaryServer(master_name, cluster_name, no_create=True)
+    adv_ser = ANServer(master_name, cluster_name, no_create=True)
     pid = multiprocessing.current_process()
     base_message = {'cluster_name': cluster_name, 'master_name': master_name, 'pid':str(pid) }
         
@@ -574,7 +569,7 @@ def log_sc_startup( ):
         first = msg_list[0]
         msg_list.sort(key=lambda x: x['count'])
         clusters.add( first['cluster_name'] )
-        adv_ser = AdversaryServer(first['master_name'], first['cluster_name'], no_create=True)
+        adv_ser = ANServer(first['master_name'], first['cluster_name'], no_create=True)
         log = adv_ser.startup_log 
         for msg in msg_list:
             if 'time' not in msg:
@@ -594,13 +589,13 @@ def log_sc_startup( ):
     return list(clusters) 
 
 if __name__ == "__main__":
-    if not AdversaryMaster.exists():
-        AdversaryMaster.create_table( read_capacity_units=2, write_capacity_units=1, wait=True)
-    if not StarclusterConfig.exists():
-        StarclusterConfig.create_table( read_capacity_units=2, write_capacity_units=1, wait=True)
+    if not ANMaster.exists():
+        ANMaster.create_table( read_capacity_units=2, write_capacity_units=1, wait=True)
+    if not ANWorkerConfig.exists():
+        ANWorkerConfig.create_table( read_capacity_units=2, write_capacity_units=1, wait=True)
     print log_sc_startup()
     exit()
-    ams = AdversaryMasterServer()
+    ams = ANMasterServer()
     #print ams.get_key('us-east-1')
     print ams.configure_data_cluster()
     print ams.configure_gpu_cluster()
