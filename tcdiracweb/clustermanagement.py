@@ -1,6 +1,7 @@
 from flask import Blueprint, Response, make_response 
 from flask import jsonify, abort, current_app
-from flask import render_template, flash
+from flask import render_template, flash, request
+
 
 from tcdiracweb.utils.app_init import crossdomain, secure_page, check_id
 
@@ -54,6 +55,8 @@ def scgenerate_config():
 @cm.route('/cluster/<cluster_name>')
 @secure_page
 def cluster_get( cluster_name = None ):
+    #TODO - this needs to be reconciled with the new setup
+    """
     from tcdiracweb.utils.starclustercfg import StarclusterConfig
     try:
         instance_id = boto.utils.get_instance_identity()['document']['instanceId']
@@ -74,7 +77,7 @@ def cluster_get( cluster_name = None ):
                 abort(400)
     except Exception as e:
         current_app.logger.error("%r" % e)
-        abort(400)
+        abort(400)"""
 
 
 @cm.route('/createcluster', methods=['POST'])
@@ -149,7 +152,6 @@ def gpu_cluster():
     else:
         abort(400)
 
-        
 @cm.route('/datacluster', methods=['POST'])
 @secure_page
 def data_cluster():
@@ -177,6 +179,46 @@ def data_cluster():
         return jsonify({'master_name':master_name, 'cluster_name': cluster_name, 'pid':p.pid})
     else:
         abort(400)
+
+@cm.route('/workerdefault/<cluster_type>/<aws_region>', methods=['POST', 'GET'])
+def worker_default( cluster_type, aws_region ):
+    from masterdirac.models.worker import ANWorkerBase
+    if request.method == 'POST':
+        #create/update'
+        item = None
+        try:
+            #this is an update
+            item = ANWorkerBase.get( cluster_type, aws_region )
+            current_app.logger.info( 
+                    "Updating config for cluster type[%s] in [%s]" % (
+                        cluster_type, aws_region)
+                    )
+        except ANWorkerBase.DoesNotExist as dne:
+            #this is an insert
+            current_app.logger.info( 
+                    "Inserting new cluster type[%s] in [%s]" % (
+                        cluster_type, aws_region )
+                    )
+            item = ANWorkerBase( cluster_type, aws_region )
+        finally:
+            for key, value in request.form.iteritems():
+                current_app.logger.info( "%s, %s" % (key, value) )
+                item.update_item(key, value)
+            item.save()
+
+        return Response( json.dumps(
+            { 'cluster_type': cluster_type, 
+            'aws_region' : aws_region}),
+                mimetype='application/json', status=200)
+    else:
+        try:
+            item = ANWorkerBase.get( cluster_type, aws_region )
+            
+        except ANWorkerBase.DoesNotExist as dne:
+            return Response( json.dumps({ 'error': 'Not Found', 
+                'cluster_type': cluster_type, 
+                'aws_region' : aws_region}), 
+                mimetype='application/json', status=404)
 
 @cm.route('/scconfig/<master_name>/<cluster_name>')
 def scget_config(master_name, cluster_name):
