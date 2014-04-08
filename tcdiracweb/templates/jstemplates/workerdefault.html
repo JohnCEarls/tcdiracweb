@@ -1,0 +1,75 @@
+<script type="text/template" id="template-default-worker">
+    <div class="panel panel-default">
+    <div class="panel-heading">
+      <h4 class="panel-title">
+        <a data-toggle="collapse" data-parent="#accordion" 
+            href="#collapse-<%= cluster_type  %>-<%= aws_region %>">
+          <strong><%= cluster_type %></strong> - <%= aws_region %>
+        </a>
+
+      </h4>
+    </div>
+    <div id="collapse-<%= cluster_type  %>-<%= aws_region %>" class="panel-collapse collapse">
+      <div class="panel-body">
+        <ul class="list-group">
+            <li class="list-group-item"><strong>Instance Type:</strong>  <%= instance_type %></li>
+            <li class="list-group-item"><strong>AMI:</strong>  <%= image_id %></li>
+            <li class="list-group-item"><strong>Cluster size:</strong>  <%= cluster_size %></li>
+            <li class="list-group-item"><strong>Spot Bid:</strong>  <%= spot_bid %></li>
+            <li class="list-group-item"><strong>Plugins: </strong> <%= plugins  %></li>
+            <li class="list-group-item"><strong>Force Spot Master:</strong> <%= force_spot_master %> </li>
+        </ul> 
+        <div class = "btn-group btn-group-left">
+            <button type="button" class="btn btn-default btn-sm edit">
+                <span class="glyphicon glyphicon-edit"></span> Edit
+            </button>
+        </div>
+        <div class = "btn-group btn-group-right" style="float:right">
+            <button type="button" class="btn btn-default btn-sm">
+                <span class="glyphicon glyphicon-remove"></span> Delete
+            </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</script>
+
+<script type="text/template" id="template-default-worker-list">
+    <div class="panel-group" id="accordion">
+    <div class="panel panel-default">
+    <div class="panel-heading">
+      <h4 class="panel-title">
+            <button type="button" class="btn btn-default btn-sm">
+                <span class="glyphicon glyphicon-plus"></span> New 
+            </button>
+      </h4>
+    </div>
+    </div>
+</script>
+
+<script type="text/template" id="template-default-worker-form">
+<form role="form" id="cluster_config">
+    <label for="cluster_type">Cluster Type</label>
+    <input type="text" class="form-control" name="cluster_type" value="<%= cluster_type %>"/>
+    <label for="aws_region">Region</label>
+    <input type="text" class="form-control" name="aws_region" value="<%= aws_region %>"/>
+    <label for="instance_type">Instance Type</label>
+    <input type="text" class="form-control" name="instance_type" value="<%= instance_type %>"/>
+    <label for="instance_type">Amazon Machine Image</label>
+    <input type="text" class="form-control" name="image_id" value="<%= image_id %>"/>
+    <label for="cluster_size">Cluster Size(default)</label>
+    <input type="text" class="form-control" name="cluster_size" value="<%= cluster_size %>"/>
+    <label for="spot_bid">Spot bid(default)</label>
+    <input type="text" class="form-control" name="spot_bid" value="<%= spot_bid %>"/>
+    <label for="plugins">Plugins</label>
+    <input type="text" class="form-control" name="plugins" value="<%= plugins %>"/>
+    <label for="force_spot_master">
+    <input type="checkbox" name="force_spot_master" id="force_spot_master" <% if(force_spot_master){ print('checked');} %> />
+        Force Master to be spot (default)
+    </label>
+    <button type="button" id="template-default-worker-button" class="btn btn-default">
+        Insert 
+    </button>
+</form>
+</script>
+

@@ -180,45 +180,58 @@ def data_cluster():
     else:
         abort(400)
 
+@cm.route('/workerdefault', methods=['GET'])
+@cm.route('/workerdefault/<cluster_type>', methods=['GET'])
 @cm.route('/workerdefault/<cluster_type>/<aws_region>', methods=['POST', 'GET'])
-def worker_default( cluster_type, aws_region ):
-    from masterdirac.models.worker import ANWorkerBase
+def worker_default( cluster_type=None, aws_region=None ):
+    import masterdirac.models.worker as wkr
+    valid_fields = ['instance_type','image_id',
+            'cluster_size', 'plugins', 'force_spot_master', 'spot_bid']
     if request.method == 'POST':
+        req_d = request.get_json(silent=True)
+        if not req_d:
+            req_d = request.form.to_dict()
+        if 'cluster_type' in req_d:
+            cluster_type = req_d['cluster_type']
+        if 'aws_region' in req_d:
+            aws_region = req_d['aws_region']
         #create/update'
-        item = None
-        try:
-            #this is an update
-            item = ANWorkerBase.get( cluster_type, aws_region )
-            current_app.logger.info( 
-                    "Updating config for cluster type[%s] in [%s]" % (
-                        cluster_type, aws_region)
-                    )
-        except ANWorkerBase.DoesNotExist as dne:
-            #this is an insert
-            current_app.logger.info( 
-                    "Inserting new cluster type[%s] in [%s]" % (
-                        cluster_type, aws_region )
-                    )
-            item = ANWorkerBase( cluster_type, aws_region )
-        finally:
-            for key, value in request.form.iteritems():
-                current_app.logger.info( "%s, %s" % (key, value) )
-                item.update_item(key, value)
-            item.save()
-
-        return Response( json.dumps(
-            { 'cluster_type': cluster_type, 
-            'aws_region' : aws_region}),
+        current_app.logger.info( req_d )
+        if cluster_type is None or aws_region is None:
+            #missing information
+            msg =  {'error': 'Invalid URI for insert/update',
+                'cluster_type': str(cluster_type),
+                'aws_region': str(aws_region)}
+            return Response( json.dumps( msg ), mimetype='application/json', 
+                    status=400)
+        result_clean = dict([(key,value) for key, value in req_d.iteritems()
+            if key in valid_fields])
+        if 'spot_bid' in result_clean:
+            result_clean['spot_bid'] = float( result_clean['spot_bid'] )
+        if 'cluster_size' in result_clean:
+            result_clean['cluster_size'] = int( result_clean['cluster_size'] )
+        if 'force_spot_master' in result_clean:
+            result_clean['force_spot_master'] = \
+                    result_clean['force_spot_master'] in ['True','true','1', True] 
+        wkr.insert_ANWorkerBase( cluster_type, aws_region, **result_clean )
+        result = wkr.get_ANWorkerBase( cluster_type, aws_region )
+        return Response( json.dumps( result ),
                 mimetype='application/json', status=200)
     else:
-        try:
-            item = ANWorkerBase.get( cluster_type, aws_region )
-            
-        except ANWorkerBase.DoesNotExist as dne:
-            return Response( json.dumps({ 'error': 'Not Found', 
-                'cluster_type': cluster_type, 
-                'aws_region' : aws_region}), 
-                mimetype='application/json', status=404)
+        result = None
+        if aws_region is None and 'aws_region' in request.args:
+            aws_region = request.args['aws_region']
+        result = wkr.get_ANWorkerBase( cluster_type, aws_region )
+        if result:
+            status = 200
+        else:
+            status = 404
+        return Response( json.dumps(result),
+                mimetype='application/json', status=status)
+
+@cm.route('/manageworkerdefault')
+def manage_worker_default():
+    return render_template('workerdefault.html', app=current_app)
 
 @cm.route('/scconfig/<master_name>/<cluster_name>')
 def scget_config(master_name, cluster_name):
