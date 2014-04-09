@@ -3,15 +3,16 @@
     <div class="panel-heading">
       <h4 class="panel-title">
         <a data-toggle="collapse" data-parent="#accordion" 
-            href="#collapse-<%= cluster_type  %>-<%= aws_region %>">
-          <strong><%= cluster_type %></strong> - <%= aws_region %>
+            href="#collapse-<%= cluster_type.replace(/ /g, "-")  %>-<%= aws_region.replace(/ /g, "-")   %>">
+          <strong><%= cluster_type %></strong> (<%= aws_region %>)
         </a>
-
       </h4>
     </div>
-    <div id="collapse-<%= cluster_type  %>-<%= aws_region %>" class="panel-collapse collapse">
+    <div id="collapse-<%= cluster_type.replace(/ /g, "-")  %>-<%= aws_region.replace(/ /g,"-") %>" class="panel-collapse collapse">
       <div class="panel-body">
         <ul class="list-group">
+            <li class="list-group-item"><strong>Cluster Type:</strong>  <%= cluster_type %></li>
+            <li class="list-group-item"><strong>AWS Region:</strong>  <%= aws_region  %></li>
             <li class="list-group-item"><strong>Instance Type:</strong>  <%= instance_type %></li>
             <li class="list-group-item"><strong>AMI:</strong>  <%= image_id %></li>
             <li class="list-group-item"><strong>Cluster size:</strong>  <%= cluster_size %></li>
@@ -25,7 +26,7 @@
             </button>
         </div>
         <div class = "btn-group btn-group-right" style="float:right">
-            <button type="button" class="btn btn-default btn-sm">
+            <button type="button" class="btn btn-default btn-sm delete">
                 <span class="glyphicon glyphicon-remove"></span> Delete
             </button>
         </div>
@@ -39,7 +40,7 @@
     <div class="panel panel-default">
     <div class="panel-heading">
       <h4 class="panel-title">
-            <button type="button" class="btn btn-default btn-sm">
+            <button type="button" class="btn btn-default btn-sm insert">
                 <span class="glyphicon glyphicon-plus"></span> New 
             </button>
       </h4>

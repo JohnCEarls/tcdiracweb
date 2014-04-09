@@ -182,13 +182,19 @@ def data_cluster():
 
 @cm.route('/workerdefault', methods=['GET'])
 @cm.route('/workerdefault/<cluster_type>', methods=['GET'])
-@cm.route('/workerdefault/<cluster_type>/<aws_region>', methods=['POST', 'GET'])
+@cm.route('/workerdefault/<cluster_type>/<aws_region>', methods=['POST', 'GET', 'DELETE'])
 def worker_default( cluster_type=None, aws_region=None ):
     import masterdirac.models.worker as wkr
     valid_fields = ['instance_type','image_id',
             'cluster_size', 'plugins', 'force_spot_master', 'spot_bid']
+    current_app.logger.info( "%r" % request )
     if request.method == 'POST':
         req_d = request.get_json(silent=True)
+        for key, value in req_d.iteritems():
+            try:
+                req_d[key] = value.strip()
+            except AttributeError as ae:
+                pass
         if not req_d:
             req_d = request.form.to_dict()
         if 'cluster_type' in req_d:
@@ -217,6 +223,19 @@ def worker_default( cluster_type=None, aws_region=None ):
         result = wkr.get_ANWorkerBase( cluster_type, aws_region )
         return Response( json.dumps( result ),
                 mimetype='application/json', status=200)
+    elif request.method == 'DELETE':
+        try:
+            wkr.delete_ANWorkerBase( cluster_type, aws_region )
+            return Response( json.dumps(
+                {'message':'Deleted %s(%s)' % ( cluster_type, aws_region )} ),
+                mimetype='application/json', status=200)
+        except wkr.ANWorkerBase.DoesNotExist as dne:
+            return Response( json.dumps(
+                {
+                    'error':'Cannot find element', 
+                    'model': req_d,
+                }), 
+                mimetype='application/json', status=404)
     else:
         result = None
         if aws_region is None and 'aws_region' in request.args:

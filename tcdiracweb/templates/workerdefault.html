@@ -50,10 +50,11 @@
     <div class="panel panel-primary col-md-8" id="cluster-table-container"></div>
 </div>
 <script type="text/javascript">
+$(function(){
     var default_worker_collection = new DefaultWorkerCollection();
-    console.log( default_worker_collection );
     var dwv = new DefaultWorkerCollectionView( { el:'#cluster-table-container', 
             collection: default_worker_collection });
+});
 
 </script>
 {% endblock %}
