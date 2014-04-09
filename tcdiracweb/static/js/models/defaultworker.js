@@ -5,7 +5,7 @@ var DefaultWorker = Backbone.Model.extend({
                 'image_id':'None',
                 'cluster_size':0,
                 'spot_bid':0.0,
-                'plugins':'None',
+                'plugins':'base-tgr',
                 'force_spot_master':true
                 },
     url : function( ){

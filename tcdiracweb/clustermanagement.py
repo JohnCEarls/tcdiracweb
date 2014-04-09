@@ -190,6 +190,7 @@ def worker_default( cluster_type=None, aws_region=None ):
     current_app.logger.info( "%r" % request )
     if request.method == 'POST':
         req_d = request.get_json(silent=True)
+
         for key, value in req_d.iteritems():
             try:
                 req_d[key] = value.strip()
@@ -197,10 +198,19 @@ def worker_default( cluster_type=None, aws_region=None ):
                 pass
         if not req_d:
             req_d = request.form.to_dict()
+
         if 'cluster_type' in req_d:
             cluster_type = req_d['cluster_type']
         if 'aws_region' in req_d:
             aws_region = req_d['aws_region']
+        if(cluster_type == 'None'):
+            current_app.logger.info( req_d )
+            current_app.logger.info( "Got a none")
+            status = 404
+            req_d['error'] = 'Got a None'
+            return Response( json.dumps(req_d),
+                mimetype='application/json', status=status)
+
         #create/update'
         current_app.logger.info( req_d )
         if cluster_type is None or aws_region is None:
