@@ -180,10 +180,25 @@ def data_cluster():
     else:
         abort(400)
 
+
+@cm.route('/manageworkerdefault')
+@secure_page
+def manage_worker_default():
+    """
+    Web page for inserting/updating default worker cluster
+    configurations
+    """
+    return render_template('workerdefault.html', app=current_app)
+
 @cm.route('/workerdefault', methods=['GET'])
 @cm.route('/workerdefault/<cluster_type>', methods=['GET'])
 @cm.route('/workerdefault/<cluster_type>/<aws_region>', methods=['POST', 'GET', 'DELETE'])
+@secure_page
 def worker_default( cluster_type=None, aws_region=None ):
+    """
+    API to getting/setting information about 
+    the default worker cluster configurations
+    """
     current_app.logger.info( "worker_default-\n%r" % request )
     from controllers.defaultworker import DefaultWorker 
     dw = DefaultWorker( current_app, cluster_type, aws_region)
@@ -195,10 +210,6 @@ def worker_default( cluster_type=None, aws_region=None ):
         msg, status = dw.GET(request)
     return Response( json.dumps( msg ), mimetype='application/json',
                         status = status )
-
-@cm.route('/manageworkerdefault')
-def manage_worker_default():
-    return render_template('workerdefault.html', app=current_app)
 
 @cm.route('/scconfig/<master_name>/<cluster_name>')
 def scget_config(master_name, cluster_name):

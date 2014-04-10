@@ -75,18 +75,6 @@ var DefaultWorkerCollectionView = Backbone.View.extend({
         return this;
     },
     loadComplete : function(){},
-    /*
-    addOne replaced this, but I am too much of a coward to just delete it
-    if you run into this later and no problems, delete
-    processCluster : function( cluster ){
-        var mydcv = new DefaultWorkerView(
-            {collection: this.collection,
-                model:cluster});
-        console.log(this.collection);
-        mydcv.render();
-        this.$el.find('div#accordion').append(mydcv.el);
-    },
-    */
 
     /* Adds a defaultworkerview to the collection view  */
     addOne: function(foo) {
