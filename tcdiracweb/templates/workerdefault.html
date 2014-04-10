@@ -25,25 +25,10 @@
     form#cluster_config {
         padding: 10px;
     }
-    form span.default-value {
-        font-style: italic;
-    }
-    tr.log_row {
-        hidden: true;
-    }
-    textarea.logs {
-        width:100%;
-    }
-    tr.clusterRow {
-        width:100%;
-    }
-    td.cluster_name {
-        font-style:bold;
-    }
 </style>
 <div class="row">
     <div class="col-md-12 page-header">
-        <h1>Cluster management console</h1>
+        <h1>Default Worker Cluster Settings</h1>
     </div>
 </div>
 <div class="row">
@@ -54,7 +39,8 @@
 $(function(){
     var default_worker_collection = new DefaultWorkerCollection();
     var dwv = new DefaultWorkerCollectionView( { el:'#cluster-table-container', 
-            collection: default_worker_collection });
+            collection: new DefaultWorkerCollection() });
+    dwv.render();
 });
 
 </script>

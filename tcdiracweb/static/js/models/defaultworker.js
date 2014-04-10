@@ -22,12 +22,46 @@ var DefaultWorker = Backbone.Model.extend({
         });
     },
     idAttribute : 'cid',
+    parse : function( response ){
+        if( response.data){
+            return response.data;
+        }
+        return response;
+    }
 
 });
 
 var DefaultWorkerCollection = Backbone.Collection.extend({
     model: DefaultWorker,
     url : '/cm/workerdefault',
-    comparator : 'aws_region',
+    //comparator : 'aws_region',
+    comparator : function( a,b ){
+        console.log("in comparator");
+        
+        if( a.get('cluster_type').toLowerCase() 
+            > b.get('cluster_type').toLowerCase() ){
+            return 1;
+        }
+        if( a.get('cluster_type').toLowerCase() < 
+            b.get('cluster_type').toLowerCase() ){
+            return -1;
+        }
+        if( a.get('cluster_type') === b.get('cluster_type') ){
+            if(a.get('aws_region').toLowerCase() > 
+                b.get('aws_region').toLowerCase()){
+                return 1;
+            } else {
+                return -1;
+            }
+        }
+        return 0;//all equal, should not happen
+    },
+    parse : function( response ){
+        if( response.data ){
+            return response.data;
+        }
+        return response;
+    }
+
 });
 

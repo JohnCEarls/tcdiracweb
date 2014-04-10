@@ -184,79 +184,17 @@ def data_cluster():
 @cm.route('/workerdefault/<cluster_type>', methods=['GET'])
 @cm.route('/workerdefault/<cluster_type>/<aws_region>', methods=['POST', 'GET', 'DELETE'])
 def worker_default( cluster_type=None, aws_region=None ):
-    import masterdirac.models.worker as wkr
-    valid_fields = ['instance_type','image_id',
-            'cluster_size', 'plugins', 'force_spot_master', 'spot_bid']
-    current_app.logger.info( "%r" % request )
+    current_app.logger.info( "worker_default-\n%r" % request )
+    from controllers.defaultworker import DefaultWorker 
+    dw = DefaultWorker( current_app, cluster_type, aws_region)
     if request.method == 'POST':
-        req_d = request.get_json(silent=True)
-
-        for key, value in req_d.iteritems():
-            try:
-                req_d[key] = value.strip()
-            except AttributeError as ae:
-                pass
-        if not req_d:
-            req_d = request.form.to_dict()
-
-        if 'cluster_type' in req_d:
-            cluster_type = req_d['cluster_type']
-        if 'aws_region' in req_d:
-            aws_region = req_d['aws_region']
-        if(cluster_type == 'None'):
-            current_app.logger.info( req_d )
-            current_app.logger.info( "Got a none")
-            status = 404
-            req_d['error'] = 'Got a None'
-            return Response( json.dumps(req_d),
-                mimetype='application/json', status=status)
-
-        #create/update'
-        current_app.logger.info( req_d )
-        if cluster_type is None or aws_region is None:
-            #missing information
-            msg =  {'error': 'Invalid URI for insert/update',
-                'cluster_type': str(cluster_type),
-                'aws_region': str(aws_region)}
-            return Response( json.dumps( msg ), mimetype='application/json', 
-                    status=400)
-        result_clean = dict([(key,value) for key, value in req_d.iteritems()
-            if key in valid_fields])
-        if 'spot_bid' in result_clean:
-            result_clean['spot_bid'] = float( result_clean['spot_bid'] )
-        if 'cluster_size' in result_clean:
-            result_clean['cluster_size'] = int( result_clean['cluster_size'] )
-        if 'force_spot_master' in result_clean:
-            result_clean['force_spot_master'] = \
-                    result_clean['force_spot_master'] in ['True','true','1', True] 
-        wkr.insert_ANWorkerBase( cluster_type, aws_region, **result_clean )
-        result = wkr.get_ANWorkerBase( cluster_type, aws_region )
-        return Response( json.dumps( result ),
-                mimetype='application/json', status=200)
+        msg, status = dw.POST( request )
     elif request.method == 'DELETE':
-        try:
-            wkr.delete_ANWorkerBase( cluster_type, aws_region )
-            return Response( json.dumps(
-                {'message':'Deleted %s(%s)' % ( cluster_type, aws_region )} ),
-                mimetype='application/json', status=200)
-        except wkr.ANWorkerBase.DoesNotExist as dne:
-            return Response( json.dumps(
-                {
-                    'error':'Cannot find element', 
-                    'model': req_d,
-                }), 
-                mimetype='application/json', status=404)
+        msg, status = dw.DELETE()
     else:
-        result = None
-        if aws_region is None and 'aws_region' in request.args:
-            aws_region = request.args['aws_region']
-        result = wkr.get_ANWorkerBase( cluster_type, aws_region )
-        if result:
-            status = 200
-        else:
-            status = 404
-        return Response( json.dumps(result),
-                mimetype='application/json', status=status)
+        msg, status = dw.GET(request)
+    return Response( json.dumps( msg ), mimetype='application/json',
+                        status = status )
 
 @cm.route('/manageworkerdefault')
 def manage_worker_default():

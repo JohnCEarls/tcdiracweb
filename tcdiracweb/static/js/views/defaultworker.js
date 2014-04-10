@@ -1,6 +1,12 @@
+/**
+ *  The DefaultWorkerView takes a single DefaultWorker and displays it
+ *  in a panel
+ * **/
 var DefaultWorkerView = Backbone.View.extend({
     type : "DefaultWorkerView",
     template : _.template( $('#template-default-worker').html() ),
+    tagName:"div",
+    className : "panel panel-default",
     initialize : function(){
         _.bindAll.apply(_, [this].concat(_.functions(this)));
         this.model.on('change', this.render, this);
@@ -12,6 +18,7 @@ var DefaultWorkerView = Backbone.View.extend({
         $(this.el).html(outputHtml);
         return this;
     },
+
     events : {
         'click .edit': 'loadEditForm',
         'click .delete': 'deleteModel',
@@ -19,6 +26,7 @@ var DefaultWorkerView = Backbone.View.extend({
 
     loadEditForm : function(){
         if( app.dwfv !== undefined ){
+            //a form is active, so remove it
             app.dwfv.remove();
         }
 
@@ -29,37 +37,33 @@ var DefaultWorkerView = Backbone.View.extend({
     },
 
     deleteModel : function(){
-        console.log( 'deleting model' );
         this.collection.remove(this.model);
         that = this;
         this.model.delete( function( data, textStatus, jqXHR){
-            console.log( that.collection );
+            // success
             that.collection.remove( that.model );
-            that.clear();
-            console.log( that.collection );
+            that.remove();
         },
         function( jqXHR, textStatus, errorThrown){
+            //error
+            console.log('Error on delete');
             console.log( jqXHR );
             console.log( textStatus );
             console.log( errorThrown );
         });
     },
-    clear : function(){
-        this.$el.html('');
-    }
-
 }); 
 
 var DefaultWorkerCollectionView = Backbone.View.extend({
     type : "DefaultWorkerCollectionView",
     template : _.template( $('#template-default-worker-list').html() ),
     initialize : function(){
+        this.domList = new Array();
         _.bindAll.apply(_, [this].concat(_.functions(this)))
-        this.collection.bind('add', this.processCluster);
-        this.render();
+        this.collection.bind('add', this.addOne); 
     },
+
     render : function(){
-        console.log("rendering");
         var outputHtml = this.template();
         $(this.el).html( outputHtml );
         that = this;
@@ -70,26 +74,56 @@ var DefaultWorkerCollectionView = Backbone.View.extend({
         });
         return this;
     },
-    loadComplete : function(){
-        console.log("loadComplete");
-    },
+    loadComplete : function(){},
+    /*
+    addOne replaced this, but I am too much of a coward to just delete it
+    if you run into this later and no problems, delete
     processCluster : function( cluster ){
-            //if(cluster !== undefined && cluster.cluster_type !== 'None')
-            //{//stupid hack
-                var mydcv = new DefaultWorkerView(
-                    {collection: this.collection,
-                        model:cluster});
-                mydcv.render();
-                this.$el.find('div#accordion').append(mydcv.el);
-            //}
+        var mydcv = new DefaultWorkerView(
+            {collection: this.collection,
+                model:cluster});
+        console.log(this.collection);
+        mydcv.render();
+        this.$el.find('div#accordion').append(mydcv.el);
+    },
+    */
+
+    /* Adds a defaultworkerview to the collection view  */
+    addOne: function(foo) {
+        var $children = this.$el.find('div#accordion').children(),
+            index = this.collection.indexOf(foo),
+            view = new DefaultWorkerView(
+            {collection: this.collection,
+                model:foo});
+        if (this.domList.length == 0) {
+          //add first element
+          this.domList.push(index);
+          this.$el.find('div#accordion').append(view.render().el);
+        } else {
+          //add collection to domList and sort
+          this.domList.push(index);
+          this.domList.sort(function(a,b){
+            return (a-b)});
+          //get position of element in list and add one to offset
+          //initial dom element that contains insert button
+          var ins = this.domList.indexOf(index) + 1;
+          //gives element at current position
+          var pos = $children.eq(ins);
+          console.log( pos );
+          if (pos.length > 0) {//there are elements that will follow
+            pos.before(view.render().el);
+          } else {
+            //add to the end
+            this.$el.find('div#accordion').append(view.render().el);
+          }
+        }
     },
 
-
-    
     events : {
         'click .insert' : 'loadInsertForm'
     },
 
+    /** send default worker to form **/
     loadInsertForm : function(){
         var new_model = new DefaultWorker();
         if( app.dwfv !== undefined ){
@@ -103,9 +137,8 @@ var DefaultWorkerCollectionView = Backbone.View.extend({
 
 
 });
-
+/** The form for editting **/
 var DefaultWorkerFormView = Backbone.View.extend({
-    //el: '#cluster-form-container',
     tagName : "div",
     type : "DefaultWorkerFormView",
     template : _.template( $('#template-default-worker-form').html() ),
@@ -115,7 +148,6 @@ var DefaultWorkerFormView = Backbone.View.extend({
 
     render : function(){
         var outputHtml = this.template( this.model.toJSON() );
-
         $(this.el).html( outputHtml );
         $('#cluster-form-container').append(this.el);
     },
@@ -130,31 +162,20 @@ var DefaultWorkerFormView = Backbone.View.extend({
             acc[field.name] = field.value;
             return acc;
         }, {});
-
         if( data.force_spot_master === undefined){
             data.force_spot_master = false;
         } else {
             data.force_spot_master = true;
         }
-        //if( data.cluster_type !== 'None' )
-        //{//stupid hack
-            if( this.model.get('cluster_type') !== data.cluster_type ||
-                        this.model.get('aws_region') !== data.aws_region)
-            {
-                console.log('update')
-                console.log( this.model )
-                console.log( data )
-                    var new_model = new DefaultWorker(data);
-                    new_model.save();
-                    this.collection.add(new_model);
-            } else {
-                console.log('insert')
-                console.log( this.model )
-                console.log( data )
-                this.model.save( data );
-            }
-        //}
-
+        if( this.model.get('cluster_type') !== data.cluster_type ||
+                    this.model.get('aws_region') !== data.aws_region)
+        {
+            var new_model = new DefaultWorker(data);
+            new_model.save();
+            this.collection.add(new_model);
+        } else {
+            this.model.save( data );
+        }
         this.remove()
     }
 

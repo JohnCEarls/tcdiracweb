@@ -42,9 +42,6 @@ var ClustersView = Backbone.View.extend({
     }
     var myclusterView = new ClusterView({ model: cluster });
     myclusterView.render();
-    //console.log(cluster);
-    //console.log("processCluster");
-    //console.log(myclusterView);
     this.$el.find('tbody#cluster-body').append(myclusterView.el);
   }
 });
