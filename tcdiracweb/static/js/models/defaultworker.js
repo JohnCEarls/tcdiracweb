@@ -12,7 +12,7 @@ var DefaultWorker = Backbone.Model.extend({
         return this.urlRoot + '/' +
         this.get('cluster_type') + '/' + this.get('aws_region');
     },
-    urlRoot : '/cm/workerdefault',
+    urlRoot : '/cm/defaultworker',
     delete : function( successCallback, errorCallback){
         $.ajax( {
             url: this.url(),
@@ -33,7 +33,7 @@ var DefaultWorker = Backbone.Model.extend({
 
 var DefaultWorkerCollection = Backbone.Collection.extend({
     model: DefaultWorker,
-    url : '/cm/workerdefault',
+    url : '/cm/defaultworker',
     //comparator : 'aws_region',
     comparator : function( a,b ){
         console.log("in comparator");

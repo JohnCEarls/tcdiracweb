@@ -181,18 +181,18 @@ def data_cluster():
         abort(400)
 
 
-@cm.route('/manageworkerdefault')
+@cm.route('/managedefaultworker')
 @secure_page
 def manage_worker_default():
     """
     Web page for inserting/updating default worker cluster
     configurations
     """
-    return render_template('workerdefault.html', app=current_app)
+    return render_template('defaultworker.html', app=current_app)
 
-@cm.route('/workerdefault', methods=['GET'])
-@cm.route('/workerdefault/<cluster_type>', methods=['GET'])
-@cm.route('/workerdefault/<cluster_type>/<aws_region>', methods=['POST', 'GET', 'DELETE'])
+@cm.route('/defaultworker', methods=['GET'])
+@cm.route('/defaultworker/<cluster_type>', methods=['GET'])
+@cm.route('/defaultworker/<cluster_type>/<aws_region>', methods=['POST', 'GET', 'DELETE'])
 @secure_page
 def worker_default( cluster_type=None, aws_region=None ):
     """

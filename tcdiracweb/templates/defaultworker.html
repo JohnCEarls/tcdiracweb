@@ -2,7 +2,7 @@
 {% block title %} Cluster management {% endblock %}
 {% block headjs %}
 {{ super() }}
-{% include 'jstemplates/workerdefault.html' %}
+{% include 'jstemplates/defaultworker.html' %}
 <script type="text/javascript" src="{{
     url_for('static', filename='js/models/defaultworker.js')
 }}"></script>

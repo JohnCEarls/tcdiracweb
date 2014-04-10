@@ -25,7 +25,7 @@ function set_context(){
             set_context_label('Cluster Opt.');
             add_context(
                 { 
-                    link: '/cm/manageworkerdefault',
+                    link: '/cm/managedefaultworker',
                     text: 'Default Cluster Settings'
                 });
             break;
