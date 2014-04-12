@@ -6,7 +6,9 @@ var DefaultWorker = Backbone.Model.extend({
                 'cluster_size':0,
                 'spot_bid':0.0,
                 'plugins':'base-tgr',
-                'force_spot_master':true
+                'force_spot_master':true,
+                'prefix' : '',
+                'iam_profile': ''
                 },
     url : function( ){
         return this.urlRoot + '/' +

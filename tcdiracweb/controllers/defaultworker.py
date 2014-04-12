@@ -99,8 +99,8 @@ class DefaultWorker:
             self.cluster_type = req_d['cluster_type']
         if 'aws_region' in req_d:
             self.aws_region = req_d['aws_region']
-        valid_fields = ['instance_type','image_id', 'cluster_size', 'plugins', 
-                'force_spot_master', 'spot_bid']
+        valid_fields = ['instance_type', 'image_id', 'cluster_size', 'plugins', 
+                'force_spot_master', 'spot_bid', 'iam_profile', 'prefix']
         #remove extraneous variables
         result_clean = dict([(key,value) for key, value in req_d.iteritems()
             if key in valid_fields])
