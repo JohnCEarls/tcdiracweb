@@ -1,0 +1,278 @@
+<script type="text/template" id="template-run">
+<div class="panel-heading">
+  <h4 class="panel-title">
+    <a data-toggle="collapse" data-parent="#accordion" 
+        href="#collapse-<%= run_id.replace(/ /g, "-")  %>">
+      <strong><%= run_id %></strong>
+    </a>
+  </h4>
+</div>
+<div id="collapse-<%= run_id.replace(/ /g, "-")  %>" 
+    class="panel-collapse collapse">
+  <div class="panel-body">
+    <ul class="list-group">
+        <li class="list-group-item"><strong>Run ID :</strong> 
+            <%= run_id %></li>
+        <li class="list-group-item"><strong>Description :</strong> 
+            <%= description %></li>
+        <li class="list-group-item"><strong>Workers :</strong>  
+            <%= workers.join(', ')  %></li>
+        <li class="list-group-item"><strong>Status :</strong>  
+            <%= status  %></li>
+        <li class="list-group-item"><strong>Source Data</strong>
+            <ul class="list-group">
+                <li class="list-group-item"><em>Bucket :</em> 
+                        <%= source_data.bucket %></li>
+                <li class="list-group-item"><em>Data File :</em>
+                        <%= source_data.data_file %></li>
+                <li class="list-group-item"><em>Metadata File :</em>
+                        <%= source_data.meta_file %></li>
+                <li class="list-group-item"><em>Annotations File :</em>
+                        <%= source_data.annotations_file %></li>
+                <li class="list-group-item"><em>Agilent File :</em>  
+                        <%= source_data.agilent_file %></li>
+                <li class="list-group-item"><em>Synonym File :</em>
+                        <%= source_data.synonym_file %></li>
+            </ul>
+        </li>
+        <li class="list-group-item"><strong>Destination Data</strong>
+            <ul class="list-group">
+                <li class="list-group-item"><em>Working Bucket :</em> 
+                        <%= dest_data.working_bucket %></li>
+                <li class="list-group-item"><em>Meta File :</em>
+                        <%= dest_data.meta_file %></li>
+                <li class="list-group-item"><em>Data File(dataframe) :</em>
+                        <%= dest_data.dataframe_file %></li>
+            </ul>
+        </li>
+        <li class="list-group-item"><strong>Network Config</strong>
+            <ul class="list-group">
+                <li class="list-group-item"><em>Network Table:</em> 
+                        <%= network_config.network_table %></li>
+                <li class="list-group-item"><em>Network Source :</em>
+                        <%= network_config.network_source %></li>
+            </ul>
+        </li>
+        <li class="list-group-item"><strong>Run Settings </strong>
+            <ul class="list-group">
+                <li class="list-group-item"><em>Run Metatable :</em> 
+                        <%= run_settings.run_meta_table  %></li>
+                <li class="list-group-item"><em>Run Truth Table :</em> 
+                        <%= run_settings.run_truth_table  %></li>
+                <li class="list-group-item"><em>Run ID :</em> 
+                        <%= run_settings.run_id  %></li>
+                <li class="list-group-item"><em>Server Initialization Queue :</em> 
+                        <%= run_settings.server_initialization_queue  %></li>
+                <li class="list-group-item"><em>K :</em> 
+                        <%= run_settings.k %></li>
+                <li class="list-group-item"><em>Sample Block Size :</em> 
+                        <%= run_settings.sample_block_size %></li>
+                <li class="list-group-item"><em>Pairs Block Size :</em> 
+                        <%= run_settings.pairs_block_size %></li>
+                <li class="list-group-item"><em>Nets Block Size :</em> 
+                        <%= run_settings.nets_block_size %></li>
+                <li class="list-group-item"><em>Heartbeat Interval :</em> 
+                        <%= run_settings.heartbeat_interval %></li>
+                <li class="list-group-item"><em>Permutations :</em>
+                        <%= run_settings.permutations %></li>
+                <li class="list-group-item"><em>Chunksize :</em>
+                        <%= run_settings.chunksize %></li>
+            </ul>
+        </li>
+        <li class="list-group-item"><strong>Intercommunication Settings </strong>
+            <ul class="list-group">
+                <li class="list-group-item"><em>SQS Data to GPU:</em> 
+                        <%= intercomm_settings.sqs_from_data_to_gpu %></li>
+                <li class="list-group-item"><em>SQS GPU to Aggregator:</em> 
+                        <%= intercomm_settings.sqs_from_gpu_to_agg %></li>
+                <li class="list-group-item"><em>SQS Data to Aggregator:</em> 
+                        <%= intercomm_settings.sqs_from_data_to_agg %></li>
+                <li class="list-group-item"><em>SQS Data to Aggregator(Truth):</em> 
+                        <%= intercomm_settings.sqs_from_data_to_agg_truth %></li>
+                <li class="list-group-item"><em>S3 Data to GPU</em> 
+                        <%= intercomm_settings.s3_from_data_to_gpu %></li>
+                <li class="list-group-item"><em>S3 GPU to Aggregator</em> 
+                        <%= intercomm_settings.s3_from_gpu_to_agg %></li>
+            </ul>
+        </li>
+        <li class="list-group-item"><strong>Aggregator Settings </strong>
+        </li>
+        
+
+    </ul> 
+    <div class = "btn-group btn-group-left">
+        <button type="button" class="btn btn-default btn-sm edit">
+            <span class="glyphicon glyphicon-edit"></span> Edit
+        </button>
+    </div>
+    <div class = "btn-group btn-group-right" style="float:right">
+        <button type="button" class="btn btn-default btn-sm delete">
+            <span class="glyphicon glyphicon-remove"></span> Delete
+        </button>
+    </div>
+  </div>
+</div>
+</script>
+
+<script type="text/template" id="template-run-list">
+<div class="panel-group" id="accordion">
+  <div class="panel panel-default">
+    <div class="panel-heading">
+      <h4 class="panel-title">
+         <button type="button" class="btn btn-default btn-sm insert">
+            <span class="glyphicon glyphicon-plus"></span> New 
+         </button>
+      </h4>
+  </div>
+</div>
+</script>
+
+<script type="text/template" id="template-run-form">
+<form role="form" id="run_config">
+    <label>Run ID</label> 
+    <input type="text" class="form-control" 
+        name="run_id" 
+        value="<%= run_id %>"/>
+    <label>Description </label> 
+    <input type="text" class="form-control" 
+        name="description" 
+        value="<%= description %>" />
+    <label>Status</label>
+    <input type="text" class="form-control" 
+        name="status" 
+        value="<%= status  %>" />
+
+    <strong>Source Data</strong>
+
+    <label>Bucket</label>
+    <input type="text" class="form-control" 
+        name="source_data__bucket" 
+        value="<%= source_data.bucket %>" />
+    <label>Data File</label>
+    <input type="text" class="form-control" 
+        name="source_data__data_file"
+        value="<%= source_data.data_file %>"/>
+    <label>Metadata File</label>
+    <input type="text" class="form-control" 
+        name="source_data__meta_file" 
+        value="<%= source_data.meta_file %>"/>
+    <label>Annotations File</label>
+    <input type="text" class="form-control" 
+        name="source_data__annotations_file" 
+        value="<%= source_data.annotations_file %>" />
+    <label>Agilent File</label>
+    <input type="text" class="form-control" 
+        name="source_data__agilent_file" 
+        value="<%= source_data.agilent_file %>" />
+    <label>Synonym File</label>
+    <input type="text" class="form-control" 
+        name="source_data__synonym_file" 
+        value="<%= source_data.synonym_file %>" />
+
+    <strong>Destination Data</strong>
+
+    <label>Working Bucket</label>
+    <input type="text" class="form-control" 
+        name="dest_data__working_bucket" 
+        value="<%= dest_data.working_bucket %>"/>
+    <label>Meta File </label>
+    <input type="text" class="form-control" 
+        name="dest_data__meta_file"   
+        value="<%= dest_data.meta_file %>" />
+    <label>Data File(dataframe)</label>
+    <input type="text" class="form-control" 
+        name="dest_data__dataframe_file"
+        value="<%= dest_data.dataframe_file %>" />
+
+    <strong>Network Config</strong>
+
+    <label>Network Table</label>
+    <input type="text" class="form-control" 
+        name="network_config__network_table"
+        value="<%= network_config.network_table %>" />
+    <label>Network Source</label>
+    <input type="text" class="form-control" 
+        name="network_config__network_source" 
+        value="<%= network_config.network_source %>"/>
+
+    <strong>Run Settings </strong>
+
+    <label>Run Metatable</label>
+    <input type="text" class="form-control" 
+        name="run_settings__run_meta_table" 
+        value="<%= run_settings.run_meta_table  %>"/>
+    <label>Run Truth Table</label>
+    <input type="text" class="form-control" 
+        name="run_settings__run_truth_table"
+        value="<%= run_settings.run_truth_table  %>" />
+    <label>Run ID</label>
+    <input type="text" class="form-control" 
+        name="run_settings__run_id"
+        value="<%= run_settings.run_id  %>"/>
+    <label>Server Initialization Queue</label>
+    <input type="text" class="form-control" 
+        name="run_settings__server_initialization_queue"
+        value="<%= run_settings.server_initialization_queue  %>"/>
+    <label>K</label>
+    <input type="text" class="form-control" 
+        name="run_settings__k"
+        value="<%= run_settings.k %>"/>
+    <label>Sample Block Size</label>
+    <input type="text" class="form-control" 
+        name="run_settings__sample_block_size"
+        value="<%= run_settings.sample_block_size %>"/>
+    <label>Pairs Block Size</label>
+    <input type="text" class="form-control" 
+        name="run_settings__pairs_block_size"
+        value="<%= run_settings.pairs_block_size %>"/>
+    <label>Nets Block Size</label>
+    <input type="text" class="form-control" 
+        name="run_settings__net_block_size"
+        value="<%= run_settings.nets_block_size %>"/>
+    <label>Heartbeat Interval</label>
+    <input type="text" class="form-control" 
+        name="run_settings__heartbeat_interval"
+        value="<%= run_settings.heartbeat_interval %>"/>
+    <label>Permutations</label>
+    <input type="text" class="form-control" 
+        name="run_settings__permutations"
+        value=" <%= run_settings.permutations %>"/>
+    <label>Chunksize</label>
+    <input type="text" class="form-control" 
+        name="run_settings__chunksize"
+        value="<%= run_settings.chunksize %>"/>
+
+    <strong>Intercommunication Settings</strong>
+
+    <label>SQS Data to GPU:</label> 
+    <input type="text" class="form-control" 
+        name="intercomm_settings__sqs_from_data_to_gpu" 
+        value="<%= intercomm_settings.sqs_from_data_to_gpu %>" />
+    <label>SQS GPU to Aggregator: </label>
+    <input type="text" class="form-control" 
+        name="intercomm_settings__sqs_from_gpu_to_agg"
+        value="<%= intercomm_settings.sqs_from_gpu_to_agg %>" />
+    <label>SQS Data to Aggregator: </label>
+    <input type="text" class="form-control" 
+        name="intercomm_settings__sqs_from_data_to_agg"
+        value="<%= intercomm_settings.sqs_from_data_to_agg %>" />
+    <label>SQS Data to Aggregator(Truth): </label>
+    <input type="text" class="form-control" 
+        name="intercomm_settings__from_data_to_agg_truth"
+        value="<%= intercomm_settings.sqs_from_data_to_agg_truth %>" />
+    <label>S3 Data to GPU </label>
+    <input type="text" class="form-control" 
+        name="intercomm_settings__s3_from_data_to_gpu"
+        value="<%= intercomm_settings.s3_from_data_to_gpu %>" />
+    <label>S3 GPU to Aggregator </label>
+    <input type="text" class="form-control" 
+        name="intercomm_settings__from_gpu_to_agg"
+        value="<%= intercomm_settings.s3_from_gpu_to_agg %>"/>
+
+    <strong>Aggregator Settings </strong>
+    <button type="button" id="template-run-button" class="btn btn-default">
+        Insert 
+    </button>
+</form>
+</script>
+

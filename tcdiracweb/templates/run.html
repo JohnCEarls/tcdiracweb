@@ -2,12 +2,12 @@
 {% block title %} Cluster management {% endblock %}
 {% block headjs %}
 {{ super() }}
-{% include 'jstemplates/defaultworker.html' %}
+{% include 'jstemplates/run.html' %}
 <script type="text/javascript" src="{{
-    url_for('static', filename='js/models/defaultworker.js')
+    url_for('static', filename='js/models/run.js')
 }}"></script>
 <script type="text/javascript" src="{{ 
-    url_for('static', filename='js/views/defaultworker.js') }}"></script>
+    url_for('static', filename='js/views/run.js') }}"></script>
 <script type="text/javascript">
     AWS.config.credentials = new AWS.WebIdentityCredentials({
         RoleArn: "{{ app.config.get('AWS_ROLE_ARN_GOOGLE') }}"
@@ -28,18 +28,18 @@
 </style>
 <div class="row">
     <div class="col-md-12 page-header">
-        <h1>Default Worker Cluster Settings</h1>
+        <h1>Run Configuration</h1>
     </div>
 </div>
 <div class="row">
-    <div class="col-md-4" id="cluster-form-container"></div>
+    <div class="col-md-4" id="run-form-container"></div>
     <div class="panel panel-primary col-md-8" id="cluster-table-container"></div>
 </div>
 <script type="text/javascript">
 $(function(){
-   var dwv = new DefaultWorkerCollectionView( { el:'#cluster-table-container', 
-            collection: new DefaultWorkerCollection() });
-    dwv.render();
+    var rcv = new RunCollectionView( { el:'#cluster-table-container', 
+            collection: new RunCollection() });
+    rcv.render();
 });
 
 </script>

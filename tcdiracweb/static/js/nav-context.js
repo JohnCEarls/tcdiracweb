@@ -28,6 +28,10 @@ function set_context(){
                     link: '/cm/managedefaultworker',
                     text: 'Default Cluster Settings'
                 });
+            add_context( {
+                link: '/cm/managerun',
+                text: 'Configure Run'
+            });
             break;
         case "general":
             set_context_label('General Opt.');
