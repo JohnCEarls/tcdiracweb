@@ -1,12 +1,12 @@
 /**
- *  The DefaultWorkerView takes a single DefaultWorker and displays it
+ *  The RunView takes a single Run and displays it
  *  in a panel
  * **/
 var RunView = Backbone.View.extend({
     type : "RunView",
     template : _.template( $('#template-run').html() ),
     tagName:"div",
-    className : "panel panel-default",
+    className : "panel panel-primary",
     initialize : function(){
         _.bindAll.apply(_, [this].concat(_.functions(this)));
         this.model.on('change', this.render, this);
@@ -25,7 +25,6 @@ var RunView = Backbone.View.extend({
     },
 
     loadEditForm : function(){
-        console.log("in loadEditForm");
         if( app.rfv !== undefined ){
             //a form is active, so remove it
             app.rfv.remove();
@@ -35,6 +34,8 @@ var RunView = Backbone.View.extend({
             collection : this.collection,
             model: this.model });
         app.rfv.render();
+        app.rfv.$el.get(0).scrollIntoView(); 
+        this.$el.find('.collapse').collapse('hide');
     },
 
     deleteModel : function(){
@@ -77,7 +78,7 @@ var RunCollectionView = Backbone.View.extend({
     },
     loadComplete : function(){},
 
-    /* Adds a defaultworkerview to the collection view  */
+    /* Adds a runview to the collection view  */
     addOne: function(foo) {
         var $children = this.$el.find('div#accordion').children(),
             index = this.collection.indexOf(foo),
@@ -98,7 +99,6 @@ var RunCollectionView = Backbone.View.extend({
           var ins = this.domList.indexOf(index) + 1;
           //gives element at current position
           var pos = $children.eq(ins);
-          console.log( pos );
           if (pos.length > 0) {//there are elements that will follow
             pos.before(view.render().el);
           } else {
@@ -112,23 +112,25 @@ var RunCollectionView = Backbone.View.extend({
         'click .insert' : 'loadInsertForm'
     },
 
-    /** send default worker to form **/
+    /** send run to form **/
     loadInsertForm : function(){
         var new_model = new Run();
         if( app.rfv !== undefined ){
             app.rfv.remove()
         }
-        app.dwfv = new RunFormView( { 
+        app.rfv = new RunFormView( { 
             collection : this.collection,
             model : new_model } );
         app.rfv.render();
+        app.rfv.$el.get(0).scrollIntoView(); 
     },
 
 
 });
 /** The form for editting **/
 var RunFormView = Backbone.View.extend({
-    tagName : "div",
+    tagName:"div",
+    className : "panel panel-info",
     type : "RunFormView",
     template : _.template( $('#template-run-form').html() ),
     initialize : function(){
@@ -147,8 +149,7 @@ var RunFormView = Backbone.View.extend({
 
     submitForm : function(){
         var arr = this.$el.find('form#run_config').serializeArray();
-        console.log( arr );
-        data = {};
+        var data = {};
         for( var i = 0; i < arr.length ; i++ ){
             var field = arr[i];
             var temp = field.name.split("__");
@@ -163,39 +164,9 @@ var RunFormView = Backbone.View.extend({
                     data[p_name] = {};
                 }
                 data[p_name][s_name] = value;
-
             } else {
                 data[field.name] = value;
             }
-        }
-        console.log(data);
-        /**
-        var data = _(arr).reduce( function( acc, field ){
-            var temp = field.name.split("__");
-            console.log( temp );
-            console.log( temp[0] );
-            
-            if( temp.length > 1 ){
-                var base = temp[0];
-                var secondary = temp[1];
-                console.log(temp);
-                console.log( base );
-                console.log( secondary );
-                console.log( field.value )
-                acc[base] = {};
-                acc[base][secondary] = field.value
-            }else{
-                acc[field.name] = field.value;
-            }
-            return acc;
-        }, {});
-        console.log( data );
-       **/
-        /**
-        if( data.force_spot_master === undefined){
-            data.force_spot_master = false;
-        } else {
-            data.force_spot_master = true;
         }
         if( this.model.get('run_id') !== data.run_id)
         {
@@ -206,7 +177,6 @@ var RunFormView = Backbone.View.extend({
             this.model.save( data );
         }
         this.remove();
-        **/
     }
 
 });

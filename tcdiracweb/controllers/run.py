@@ -26,6 +26,8 @@ class Run:
         #make no distinction between insert and update
         self.app.logger.info("Update %s" % self.run_id )
         req.pop('run_id', None)#remove run_id from dict, using one in const.
+        req.pop('date_created', None) #created is non-writeable
+        req.pop('status') #status unwriteable from web
         result = run.insert_ANRun( self.run_id, **req )
         result = self._clean_response( result )
         msg = {'status': 'complete',
@@ -38,7 +40,7 @@ class Run:
             run.delete_ANRun( self.run_id )
 
             msg = {'status':'complete',
-                    'data' : {'run_id': run_id }
+                    'data' : {'run_id': self.run_id }
                     }
             return ( msg, 200 )
         except run.ANRun.DoesNotExist as dne:

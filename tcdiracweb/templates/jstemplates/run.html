@@ -129,20 +129,44 @@
 
 <script type="text/template" id="template-run-form">
 <form role="form" id="run_config">
+<div class="panel panel-info">
+    <div class="panel-heading">
+      <h4 class="panel-title">
     <label>Run ID</label> 
+      </h4>
+    </div>
+    <div class="panel-body">
     <input type="text" class="form-control" 
         name="run_id" 
         value="<%= run_id %>"/>
-    <label>Description </label> 
+    </div>
+</div>
+
+<div class="panel panel-info">
+    <div class="panel-heading">
+      <h4 class="panel-title">
+        <label>Description</label> 
+      </h4>
+    </div>
+    <div class="panel-body">
     <input type="text" class="form-control" 
         name="description" 
         value="<%= description %>" />
-    <label>Status</label>
-    <input type="text" class="form-control" 
-        name="status" 
-        value="<%= status  %>" />
+    </div>
+</div>
 
-    <strong>Source Data</strong>
+<div class="panel panel-info">
+    <div class="panel-heading">
+      <h4 class="panel-title">
+        <a data-toggle="collapse" data-parent="#accordion" 
+            href="#collapse-form-source-data">
+            <strong>Source Data</strong>
+        </a>
+      </h4>
+    </div>
+<div id="collapse-form-source-data" 
+    class="panel-collapse collapse">
+  <div class="panel-body">
 
     <label>Bucket</label>
     <input type="text" class="form-control" 
@@ -168,8 +192,22 @@
     <input type="text" class="form-control" 
         name="source_data__synonym_file" 
         value="<%= source_data.synonym_file %>" />
-
+    </div>
+</div>
+</div>
+<div class="panel panel-info">
+    <div class="panel-heading">
+      <h4 class="panel-title">
+        <a data-toggle="collapse" data-parent="#accordion" 
+            href="#collapse-form-destination-data">
     <strong>Destination Data</strong>
+
+        </a>
+      </h4>
+    </div>
+<div id="collapse-form-destination-data" 
+    class="panel-collapse collapse">
+  <div class="panel-body">
 
     <label>Working Bucket</label>
     <input type="text" class="form-control" 
@@ -183,9 +221,25 @@
     <input type="text" class="form-control" 
         name="dest_data__dataframe_file"
         value="<%= dest_data.dataframe_file %>" />
+  </div>
+</div>
+</div>
+<div class="panel panel-info">
+    <div class="panel-heading">
+      <h4 class="panel-title">
+        <a data-toggle="collapse" data-parent="#accordion" 
+            href="#collapse-form-network-config">
 
     <strong>Network Config</strong>
 
+
+
+        </a>
+      </h4>
+    </div>
+<div id="collapse-form-network-config" 
+    class="panel-collapse collapse">
+  <div class="panel-body">
     <label>Network Table</label>
     <input type="text" class="form-control" 
         name="network_config__network_table"
@@ -194,8 +248,23 @@
     <input type="text" class="form-control" 
         name="network_config__network_source" 
         value="<%= network_config.network_source %>"/>
-
+</div>
+</div>
+</div>
+<div class="panel panel-info">
+    <div class="panel-heading">
+      <h4 class="panel-title">
+        <a data-toggle="collapse" data-parent="#accordion" 
+            href="#collapse-form-run-settings">
     <strong>Run Settings </strong>
+
+
+        </a>
+      </h4>
+    </div>
+<div id="collapse-form-run-settings" 
+    class="panel-collapse collapse">
+  <div class="panel-body">
 
     <label>Run Metatable</label>
     <input type="text" class="form-control" 
@@ -227,7 +296,7 @@
         value="<%= run_settings.pairs_block_size %>"/>
     <label>Nets Block Size</label>
     <input type="text" class="form-control" 
-        name="run_settings__net_block_size"
+        name="run_settings__nets_block_size"
         value="<%= run_settings.nets_block_size %>"/>
     <label>Heartbeat Interval</label>
     <input type="text" class="form-control" 
@@ -241,8 +310,21 @@
     <input type="text" class="form-control" 
         name="run_settings__chunksize"
         value="<%= run_settings.chunksize %>"/>
-
+</div>
+</div>
+</div>
+<div class="panel panel-info">
+    <div class="panel-heading">
+      <h4 class="panel-title">
+        <a data-toggle="collapse" data-parent="#accordion" 
+            href="#collapse-form-intercomm-settings">
     <strong>Intercommunication Settings</strong>
+        </a>
+      </h4>
+    </div>
+<div id="collapse-form-intercomm-settings" 
+    class="panel-collapse collapse">
+  <div class="panel-body">
 
     <label>SQS Data to GPU:</label> 
     <input type="text" class="form-control" 
@@ -258,7 +340,7 @@
         value="<%= intercomm_settings.sqs_from_data_to_agg %>" />
     <label>SQS Data to Aggregator(Truth): </label>
     <input type="text" class="form-control" 
-        name="intercomm_settings__from_data_to_agg_truth"
+        name="intercomm_settings__sqs_from_data_to_agg_truth"
         value="<%= intercomm_settings.sqs_from_data_to_agg_truth %>" />
     <label>S3 Data to GPU </label>
     <input type="text" class="form-control" 
@@ -266,10 +348,19 @@
         value="<%= intercomm_settings.s3_from_data_to_gpu %>" />
     <label>S3 GPU to Aggregator </label>
     <input type="text" class="form-control" 
-        name="intercomm_settings__from_gpu_to_agg"
+        name="intercomm_settings__s3_from_gpu_to_agg"
         value="<%= intercomm_settings.s3_from_gpu_to_agg %>"/>
-
+</div>
+</div>
+</div>
+<div class="panel panel-info">
+    <div class="panel-heading">
+      <h4 class="panel-title">
     <strong>Aggregator Settings </strong>
+        </h4>
+    </div>
+    <div class="panel-body"></div>
+</div>
     <button type="button" id="template-run-button" class="btn btn-default">
         Insert 
     </button>

@@ -180,13 +180,19 @@ def data_cluster():
     else:
         abort(400)
 
+@cm.route('/managerun')
+@secure_page
+def manage_run():
+    return render_template('run.html', app=current_app)
+
 @cm.route('/run', methods=['GET'])
-@cm.route('/run/<run_id>', methods=['GET', 'POST', 'DELETE'])
+@cm.route('/run/<run_id>', methods=['GET', 'POST','PUT', 'DELETE'])
+@secure_page
 def run( run_id=None ):
     current_app.logger.info("run API")
     from controllers.run import Run
     run = Run( current_app, run_id)
-    if request.method == 'POST':
+    if request.method in ['POST','PUT']:
         msg, status  = run.POST( request )
     elif request.method == 'DELETE':
         msg, status = run.DELETE()
@@ -194,10 +200,6 @@ def run( run_id=None ):
         msg, status = run.GET()
     return Response( json.dumps( msg ), mimetype="application/json",
             status= status )
-
-@cm.route('/managerun')
-def manage_run():
-    return render_template('run.html', app=current_app)
 
 @cm.route('/managedefaultworker')
 @secure_page
