@@ -1,0 +1,54 @@
+{%extends 'layout.html' %}
+{% block title %} Cluster management {% endblock %}
+{% block headjs %}
+{{ super() }}
+{% include 'jstemplates/clusterconsole.html' %}
+<script type="text/javascript" src="{{ 
+    url_for('static', filename='js/views/cluster.js') }}"></script>
+<script type="text/javascript" src="{{ 
+    url_for('static', filename='js/models/cluster.js') }}"></script>
+<script type="text/javascript">
+    AWS.config.credentials = new AWS.WebIdentityCredentials({
+        RoleArn: "{{ app.config.get('AWS_ROLE_ARN_GOOGLE') }}"
+    }); 
+    AWS.config.region = 'us-east-1';
+    AWS.config.credentials.params.WebIdentityToken = "{{session['id_token']}}";
+    AWS.config.sslEnabled = true;
+    g_instance_id = '{{ instance_id }}';
+    g_scgenerate_url = '{{ url_for('cm.scgenerate_config') }}';
+</script>
+{% endblock %}
+{% block content %}
+<style>
+    form#cluster_config {
+        padding: 10px;
+    }
+    form span.default-value {
+        font-style: italic;
+    }
+    tr.log_row {
+        hidden: true;
+    }
+    textarea.logs {
+        width:100%;
+    }
+    tr.clusterRow {
+        width:100%;
+    }
+    td.cluster_name {
+        font-style:bold;
+    }
+</style>
+<div class="row">
+    <div class="col-md-12 page-header">
+        <h1>Console</h1>
+    </div>
+</div>
+<div class="row">
+    <div class="col-md-4" id="cluster-form-container"></div>
+    <div class="panel panel-primary col-md-8" id="cluster-table-container"></div>
+</div>
+<script type="text/javascript">
+
+</script>
+{% endblock %}

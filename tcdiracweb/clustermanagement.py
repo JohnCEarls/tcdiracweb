@@ -10,6 +10,12 @@ import boto
 
 cm = Blueprint('cm', __name__, template_folder = 'templates', static_folder = 'static')
 
+
+@cm.route('/console')
+def console():
+    return render_template('clusterconsole.html', app=current_app)
+
+
 @cm.route('/clustermain')
 @secure_page
 def clustermain():
