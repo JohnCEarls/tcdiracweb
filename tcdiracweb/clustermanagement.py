@@ -2,8 +2,9 @@ from flask import Blueprint, Response, make_response
 from flask import jsonify, abort, current_app
 from flask import render_template, flash, request
 
-
 from tcdiracweb.utils.app_init import crossdomain, secure_page, check_id
+
+from tcdiracweb.utils.common import json_prep
 
 import json
 import boto
@@ -21,6 +22,27 @@ def console():
 def clustermain():
     instance_id =  boto.utils.get_instance_identity()['document']['instanceId']
     return render_template('clustermain.html', instance_id=instance_id, app=current_app)
+
+@cm.route('/master', methods=['GET'])
+def get_master():
+    current_app.logger.info('get_master')
+    import masterdirac.models.master as mstr
+    master = mstr.get_active_master()
+    if master is not None:
+        msg = {'status' : 'complete',
+                   'data' : json_prep(master) }
+        status = 200
+    else:
+        msg = {'status' : 'error',
+                   'data' : '',
+                   'message':'No Active Master'}
+        status = 404
+    return Response( json.dumps( msg ), mimetype='application/json',
+                        status = status )
+
+
+
+
 
 @cm.route('/createclusterconfig', methods=['POST','GET'])
 @secure_page

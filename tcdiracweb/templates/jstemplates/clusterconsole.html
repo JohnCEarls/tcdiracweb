@@ -1,0 +1,71 @@
+<!-- jstemplates/clusterconsole.html  -->
+<script type="text/template" id="template-master">
+<div class="panel-heading">
+    <h4 class="panel-title">
+        <%= master_name %>
+    </h4>
+</div>
+<div class="panel-body">
+    <ul class="list-group">
+        <li class="list-group-item">
+            <strong>Status</strong> :
+            <%= st_status %> ( <%= status %> )
+        </li>
+        <li class="list-group-item">
+            <strong>Keys</strong>
+            <% 
+function isEmptyObject(obj) {
+  for(var prop in obj) {
+    if (Object.prototype.hasOwnProperty.call(obj, prop)) {
+      return false;
+    }
+  }
+  return true;
+}
+if( isEmptyObject(key_pairs) ){
+    print( "None");
+} else {
+    print('<ul class="list-group">');
+    for( var prop in key_pairs ){
+        print( '<li class="list-group-item">');
+        print( '<strong>' + prop + '</strong> ' );
+        print( key_pairs[prop] );
+        print( '</li>' );
+    }
+    print('</ul>');
+}
+            %>
+        </li>
+        <li class="list-group-item">
+            <strong>Created</Strong> :
+            <%= date_created %>
+        </li>
+
+        <li class="list-group-item">
+            <strong>AWS Region</Strong> :
+            <%= aws_region %>
+        </li>
+    </ul>
+</div>
+</script>
+
+<script type="text/template" id="template-cluster-row-master">
+<td><%= master_name %></td>
+<td><%= aws_region  %></td>
+<td><%= date_created %></td>
+<td><%= st_status %></td>
+<td>  
+<div class="btn-group">
+<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
+    Action <span class="caret"></span>
+  </button>
+  <ul class="dropdown-menu" role="menu">
+    <li><a href="#">Action</a></li>
+    <li><a href="#">Another action</a></li>
+    <li><a href="#">Something else here</a></li>
+    <li class="divider"></li>
+    <li><a href="#">Separated link</a></li>
+  </ul>
+</div>
+</td>
+</script>

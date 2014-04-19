@@ -4,9 +4,9 @@
 {{ super() }}
 {% include 'jstemplates/clusterconsole.html' %}
 <script type="text/javascript" src="{{ 
-    url_for('static', filename='js/views/cluster.js') }}"></script>
+    url_for('static', filename='js/views/clusterconsole.js') }}"></script>
 <script type="text/javascript" src="{{ 
-    url_for('static', filename='js/models/cluster.js') }}"></script>
+    url_for('static', filename='js/models/master.js') }}"></script>
 <script type="text/javascript">
     AWS.config.credentials = new AWS.WebIdentityCredentials({
         RoleArn: "{{ app.config.get('AWS_ROLE_ARN_GOOGLE') }}"
@@ -46,9 +46,36 @@
 </div>
 <div class="row">
     <div class="col-md-4" id="cluster-form-container"></div>
-    <div class="panel panel-primary col-md-8" id="cluster-table-container"></div>
+    <div class="panel panel-primary col-md-8" id="cluster-table-container">
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <td>
+                        Master Name
+                    </td>
+                    <td>
+                        Region
+                    </td>
+                    <td>
+                        Created
+                    </td>
+                    <td>
+                        Status
+                    </td>
+                    <td>
+                    </td>
+                </tr>
+            </thead>
+            <tbody id="master-table">
+            </tbody> 
+        </table>
+ </div>
 </div>
 <script type="text/javascript">
-
+    $(function(){
+        var master_model = new Master();
+        var master_row = new MasterRow( {model : master_model});
+        $('#master-table').append(master_row.render().el);
+    });
 </script>
 {% endblock %}
