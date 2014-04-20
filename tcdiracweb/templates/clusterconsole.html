@@ -7,6 +7,8 @@
     url_for('static', filename='js/views/clusterconsole.js') }}"></script>
 <script type="text/javascript" src="{{ 
     url_for('static', filename='js/models/master.js') }}"></script>
+<script type="text/javascript" src="{{ 
+    url_for('static', filename='js/models/worker.js') }}"></script>
 <script type="text/javascript">
     AWS.config.credentials = new AWS.WebIdentityCredentials({
         RoleArn: "{{ app.config.get('AWS_ROLE_ARN_GOOGLE') }}"
@@ -72,6 +74,30 @@
             <tbody id="master-table">
             </tbody> 
         </table>
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>
+                    </th>
+                    <th>
+                        Cluster Name
+                    </th>
+                    <th>
+                        Type
+                    </th>
+                    <th>
+                        Region
+                    </th>
+                    <th>
+                        Status
+                    </th>
+                    <th>
+                    </th>
+                </tr>
+            </thead>
+            <tbody id="worker-table">
+            </tbody> 
+        </table>
  </div>
 </div>
 <script type="text/javascript">
@@ -79,6 +105,7 @@
         var master_model = new Master();
         var master_row = new MasterRow( {model : master_model});
         $('#master-table').append(master_row.render().el);
+        var wcv = new WorkerCollectionView( { collection: new WorkerCollection() });
     });
 </script>
 {% endblock %}

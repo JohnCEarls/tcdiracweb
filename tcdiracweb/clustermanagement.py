@@ -11,11 +11,9 @@ import boto
 
 cm = Blueprint('cm', __name__, template_folder = 'templates', static_folder = 'static')
 
-
 @cm.route('/console')
 def console():
     return render_template('clusterconsole.html', app=current_app)
-
 
 @cm.route('/clustermain')
 @secure_page
@@ -40,9 +38,15 @@ def get_master():
     return Response( json.dumps( msg ), mimetype='application/json',
                         status = status )
 
-
-
-
+@cm.route('/worker/active', methods=['GET'])
+@cm.route('/worker/active/<worker_id>', methods=['GET'])
+def get_active_worker( worker_id=None ):
+    import tcdiracweb.controllers.worker as wkr
+    current_app.logger.info('get_active_worker')
+    worker = wkr.Worker( current_app, worker_id )
+    (msg, status) =  worker.GET( request )
+    return Response( json.dumps( msg ), mimetype="application/json",
+            status= status )
 
 @cm.route('/createclusterconfig', methods=['POST','GET'])
 @secure_page
@@ -207,15 +211,6 @@ def data_cluster():
         return jsonify({'master_name':master_name, 'cluster_name': cluster_name, 'pid':p.pid})
     else:
         abort(400)
-
-@cm.route('/worker/active')
-@cm.route('/worker/active/<worker_id>', methods=['GET'])
-def get_active_worker( worker_id=None ):
-    import tcdiracweb.controllers.worker as wkr
-    worker = wkr.Worker( current_app, worker_id )
-    (msg, status) =  worker.GET( request )
-    return Response( json.dumps( msg ), mimetype="application/json",
-            status= status )
 
 @cm.route('/managerun')
 @secure_page

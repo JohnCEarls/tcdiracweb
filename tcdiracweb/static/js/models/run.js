@@ -73,7 +73,6 @@ var RunCollection = Backbone.Collection.extend({
             return response.data;
         }
         return response;
-    }
-
+    },
 });
 

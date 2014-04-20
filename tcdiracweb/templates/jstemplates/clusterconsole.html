@@ -82,3 +82,64 @@ if( isEmptyObject(key_pairs) ){
 </div>
 </td>
 </script>
+
+<script type="text/template" id="template-cluster-row-worker">
+<td>
+    <button type="button" class="btn btn-default btn-xs worker-info">
+        <span class="glyphicon glyphicon-info-sign"></span>
+    </button>
+</td>
+<td>
+    <%= cluster_name %>
+</td>
+<td>
+    <%= cluster_type %>
+</td>
+<td>
+    <%= aws_region %>
+</td>
+<td>
+    <%= st_status %>
+</td>
+<td>
+    <div class="btn-group">
+      <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
+        Action <span class="caret"></span>
+      </button>
+      <ul class="dropdown-menu" role="menu">
+        <li><a href="#">Action</a></li>
+        <li><a href="#">Another action</a></li>
+        <li><a href="#">Something else here</a></li>
+        <li class="divider"></li>
+        <li><a href="#">Separated link</a></li>
+      </ul>
+    </div>
+</td>
+</script>
+
+<script type="text/template" id="template-worker">
+<div class="panel-heading">
+    <h4 class="panel-title">
+        <%= cluster_name %>
+    </h4>
+</div>
+<div class="panel-body">
+    <ul class="list-group">
+        <li class="list-group-item">
+            <strong>Status</strong> :
+            <%= st_status %> ( <%= status %> )
+        </li>
+        <li class="list-group-item">
+            <strong>Created</Strong> :
+            <% 
+            print((new Date(date_created)).toLocaleString());
+             %>
+        </li>
+
+        <li class="list-group-item">
+            <strong>AWS Region</Strong> :
+            <%= aws_region %>
+        </li>
+    </ul>
+</div>
+</script>
