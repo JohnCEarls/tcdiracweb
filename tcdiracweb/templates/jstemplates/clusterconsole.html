@@ -38,7 +38,9 @@ if( isEmptyObject(key_pairs) ){
         </li>
         <li class="list-group-item">
             <strong>Created</Strong> :
-            <%= date_created %>
+            <% 
+            print((new Date(date_created)).toLocaleString());
+             %>
         </li>
 
         <li class="list-group-item">
@@ -50,9 +52,20 @@ if( isEmptyObject(key_pairs) ){
 </script>
 
 <script type="text/template" id="template-cluster-row-master">
-<td><%= master_name %></td>
+<td>
+<button type="button" class="btn btn-default btn-xs master-info">
+  <span class="glyphicon glyphicon-info-sign"></span></button>
+</td>
+<td>
+ <%= master_name %>
+
+</td>
 <td><%= aws_region  %></td>
-<td><%= date_created %></td>
+<td>
+            <% 
+            print((new Date(date_created)).toLocaleDateString());
+             %>
+</td>
 <td><%= st_status %></td>
 <td>  
 <div class="btn-group">

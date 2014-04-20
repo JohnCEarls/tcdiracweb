@@ -16,6 +16,7 @@
     AWS.config.sslEnabled = true;
     g_instance_id = '{{ instance_id }}';
     g_scgenerate_url = '{{ url_for('cm.scgenerate_config') }}';
+    app = (typeof app !== "undefined" ? app : {});//global app hanger
 </script>
 {% endblock %}
 {% block content %}
@@ -45,25 +46,27 @@
     </div>
 </div>
 <div class="row">
-    <div class="col-md-4" id="cluster-form-container"></div>
-    <div class="panel panel-primary col-md-8" id="cluster-table-container">
+    <div class="col-md-4" id="small-container"></div>
+    <div class="panel panel-primary col-md-8" id="large-container">
         <table class="table table-hover">
             <thead>
                 <tr>
-                    <td>
+                    <th>
+                    </th>
+                    <th>
                         Master Name
-                    </td>
-                    <td>
+                    </th>
+                    <th>
                         Region
-                    </td>
-                    <td>
+                    </th>
+                    <th>
                         Created
-                    </td>
-                    <td>
+                    </th>
+                    <th>
                         Status
-                    </td>
-                    <td>
-                    </td>
+                    </th>
+                    <th>
+                    </th>
                 </tr>
             </thead>
             <tbody id="master-table">

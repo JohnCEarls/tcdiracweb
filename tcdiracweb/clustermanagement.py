@@ -208,6 +208,15 @@ def data_cluster():
     else:
         abort(400)
 
+@cm.route('/worker/active')
+@cm.route('/worker/active/<worker_id>', methods=['GET'])
+def get_active_worker( worker_id=None ):
+    import tcdiracweb.controllers.worker as wkr
+    worker = wkr.Worker( current_app, worker_id )
+    (msg, status) =  worker.GET( request )
+    return Response( json.dumps( msg ), mimetype="application/json",
+            status= status )
+
 @cm.route('/managerun')
 @secure_page
 def manage_run():
