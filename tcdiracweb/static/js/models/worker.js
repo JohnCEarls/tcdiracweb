@@ -1,6 +1,6 @@
 var Worker = Backbone.Model.extend({
     idAttribute : 'worker_id',
-    urlRoot : '/cm/worker/active',
+    urlRoot : '/cm/active/worker',
     parse : function( response ){
         console.log( response );
         if( response.data ){
@@ -25,7 +25,7 @@ var Worker = Backbone.Model.extend({
 
 var WorkerCollection = Backbone.Collection.extend({
     model: Worker,
-    url : '/cm/worker/active',
+    url : '/cm/active/worker',
     parse : function( response ){
         console.log( response );
         if( response.data ){

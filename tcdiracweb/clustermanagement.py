@@ -38,8 +38,32 @@ def get_master():
     return Response( json.dumps( msg ), mimetype='application/json',
                         status = status )
 
-@cm.route('/worker/active', methods=['GET'])
-@cm.route('/worker/active/<worker_id>', methods=['GET'])
+@cm.route('/pending/run', methods=['GET'])
+@cm.route('/pending/run/<run_id>', methods=['GET'])
+def get_pending_run( run_id=None ):
+    import tcdiracweb.controllers.run as rn
+    pr = rn.PendingRun(current_app, run_id )
+    msg, status = pr.GET( request ) 
+    return Response( json.dumps( msg ), mimetype='application/json',
+                        status = status )
+
+@cm.route('/active/run', methods=['GET'])
+@cm.route('/active/run/<run_id>', methods=['GET', 'POST'])
+def get_active_run( run_id = None ): 
+    import tcdiracweb.controllers.run as rn
+    ar = rn.ActiveRun(current_app, run_id )
+    if request.method == 'GET':
+        msg, status = ar.GET( request )
+    elif request.method == 'POST':
+        msg, status = ar.POST( request )
+    return Response( json.dumps( msg ), mimetype='application/json',
+                        status = status )
+
+
+
+
+@cm.route('/active/worker', methods=['GET'])
+@cm.route('/active/worker/<worker_id>', methods=['GET'])
 def get_active_worker( worker_id=None ):
     import tcdiracweb.controllers.worker as wkr
     current_app.logger.info('get_active_worker')

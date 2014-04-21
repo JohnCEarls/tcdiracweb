@@ -1,4 +1,5 @@
 import masterdirac.models.run as run
+import boto
 
 class Run:
     def __init__(self, app, run_id=None):
@@ -81,3 +82,73 @@ class Run:
             except AttributeError as ae:
                 pass
         return req_d
+
+class PendingRun(Run):
+
+    def __init__(self, app, run_id=None):
+        Run.__init__(self, app, run_id)
+
+    def GET( self, request):
+        self.app.logger.info("PendingRun.GET(%r)" % self.run_id)
+        result = run.get_pending_run()
+        result = self._clean_response( result )
+        if result:
+            status = 200
+        else:
+            status = 404
+        msg = {'status':'complete',
+                'data': result }
+        return (msg, status)
+
+    def POST( self, request):
+        raise Exception("Cannot edit PendingRun Object")
+
+    def DELETE( self ):
+        raise Exception("Cannot delete PendingRun Object")
+
+class ActiveRun(Run):
+    def __init__(self, app, run_id=None):
+        Run.__init__(self, app, run_id)
+
+    def GET( self, request):
+        self.app.logger.info("ActiveRun.GET(%r)" % self.run_id)
+        master_id = None
+        if 'master_id' in request.args:
+            master_id = request.args['master_id']
+        result = run.get_active_ANRun(run_id= self.run_id, master_id=master_id  )
+        self.app.logger.info("%r" % result)
+        result = self._clean_response( result )
+        if result:
+            msg = {'status':'complete',
+                'data': result }
+            status = 200
+        else:
+            msg = {
+                'status' : 'error',
+                'data' : result,
+                'message' : 'No Active Runs' }
+            status = 404
+        return (msg, status)
+
+    def POST( self, request ):
+        """
+        This is a request to interact with a Run
+        it gets passed to the master via s3
+        """
+        req_d = self._req_to_dict( request )
+        if self.run_id is not None:
+            req_d['run_id'] = self.run_id
+        import masterdirac.models.systemdefaults as sys_def 
+        l_config = sys_def.get_system_defaults( component='Master', 
+                setting_name='launcher_config' )
+        conn =  boto.sqs.connect_to_region("us-east-1")
+        l_q = conn.create_queue( l_config['launcher_sqs_in'] )
+        l_q.write( Message(body=json.dumps(req_d)))
+        msg = {'status': 'complete',
+               'data':req_d}
+        status=200
+        return ( msg, status )
+
+    def DELETE( self ):
+        self.app.logger.error("Attempt to delete active run.")
+        raise Exception("Cannot delete an ActiveRun")

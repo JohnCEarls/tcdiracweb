@@ -129,17 +129,85 @@ if( isEmptyObject(key_pairs) ){
             <strong>Status</strong> :
             <%= st_status %> ( <%= status %> )
         </li>
+
+        <li class="list-group-item">
+            <strong> Type </strong>:
+            <%= cluster_type %> 
+            <a href="/cm/managedefaultworker">
+                <span class="glyphicon glyphicon-question-sign"></span>
+            </a>
+        </li>
+        <li class="list-group-item">
+            <strong>AWS Region</Strong> :
+            <%= aws_region %>
+        </li>
+       
+        <li class="list-group-item">
+            <strong>Nodes( <%= num_nodes %> )</strong>
+            <%= nodes.join(', ') %>
+        </li>
         <li class="list-group-item">
             <strong>Created</Strong> :
             <% 
             print((new Date(date_created)).toLocaleString());
              %>
         </li>
-
         <li class="list-group-item">
-            <strong>AWS Region</Strong> :
-            <%= aws_region %>
+            <div class="panel panel-info">
+                <div class="panel-heading">
+                    <a data-toggle="collapse" data-parent="#accordion" 
+                        href="#collapse-starcluster-settings">
+                        Starcluster Settings
+                    </a>
+                </div>    
+                <div id="collapse-starcluster-settings" 
+                    class="panel-collapse collapse">
+                    <div class="panel-body">
+                        <ul class="list-group">
+                            <li class="list-group-item">
+                                <strong>Instance Type</strong>
+                                <%= starcluster_config.node_instance_type %>
+                            </li> 
+                            <li class="list-group-item">
+                                <strong>Spot Bid</strong>
+                                <%= starcluster_config.spot_bid %>
+                            </li> 
+                            
+                            <li class="list-group-item">
+                                <strong>Cluster Size</strong>
+                                <%= starcluster_config.cluster_size %>
+                            </li> 
+                            <li class="list-group-item">
+                                <strong>AMI</strong>
+                                <%= starcluster_config.node_image_id %>
+                            </li> 
+                            <li class="list-group-item">
+                                <strong>IAM Profile</strong>
+                                <%= starcluster_config.iam_profile %>
+                            </li> 
+                            <li class="list-group-item">
+                                <strong>Plugins</strong>
+                                <%= starcluster_config.plugins%>
+                            </li> 
+                            <li class="list-group-item">
+                                <strong>Key</strong>
+                                <%= starcluster_config.key_name %> 
+                                (<%= starcluster_config.key_location %>)
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
         </li>
     </ul>
 </div>
+</script>
+<script type="text/template" id="template-defaultworker-dropdown">
+<li class="add-cluster">
+    <a href="#" class="add-cluster">
+        <span class="glyphicon glyphicon-plus"></span> 
+        <%= cluster_type %>
+    </a> 
+    (<%=aws_region%>)
+</li>
 </script>

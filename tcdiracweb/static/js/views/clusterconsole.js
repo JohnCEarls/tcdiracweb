@@ -184,3 +184,42 @@ var WorkerView = Backbone.View.extend({
     },
 });
 
+var DefaultWorkerButtonView = Backbone.View.extend({
+    type : "DefaultWorkerButtonView",
+    el :"#defaultworker-button",
+    initialize : function(){
+        _.bindAll.apply(_, [this].concat(_.functions(this)));
+        this.collection.bind('add', this.addDW);
+        this.collection.fetch();
+        this.render();
+    },
+    render : function(){
+        return this;
+    },
+    addDW : function( default_worker ){
+        console.log( default_worker );
+        var worker_view = new DefaultWorkerDropdownView( { model: default_worker } );
+        this.$el.find('#add-cluster-button').append( worker_view.render().el );
+    }
+});
+
+var DefaultWorkerDropdownView = Backbone.View.extend({
+    type : "DefaultWorkerDropdown",
+    template : _.template( $('#template-defaultworker-dropdown').html() ),
+    initialize : function(){
+        _.bindAll.apply(_, [this].concat(_.functions(this)));
+        this.model.on('change', this.render, this);
+        return this;
+    },
+    render : function(){
+        $(this.el).html( this.template( this.model.toJSON() ));
+        return this;
+    },
+
+    events : {
+        'click .add-cluster' : 'addCluster',
+    },
+    addCluster : function(){
+       console.log("Add Cluster");
+    },
+});

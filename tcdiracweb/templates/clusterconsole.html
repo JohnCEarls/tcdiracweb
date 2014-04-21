@@ -6,6 +6,8 @@
 <script type="text/javascript" src="{{ 
     url_for('static', filename='js/views/clusterconsole.js') }}"></script>
 <script type="text/javascript" src="{{ 
+    url_for('static', filename='js/models/defaultworker.js') }}"></script>
+<script type="text/javascript" src="{{ 
     url_for('static', filename='js/models/master.js') }}"></script>
 <script type="text/javascript" src="{{ 
     url_for('static', filename='js/models/worker.js') }}"></script>
@@ -45,6 +47,16 @@
 <div class="row">
     <div class="col-md-12 page-header">
         <h1>Console</h1>
+    </div>
+</div>
+<div class="row">
+    <div class="btn-group" id="defaultworker-button">
+        <button type="button" class="btn btn-default dropdown-toggle" 
+            data-toggle="dropdown">
+            Add Worker Cluster <span class="caret"></span>
+         </button>
+         <ul class="dropdown-menu" id="add-cluster-button">
+         </ul>
     </div>
 </div>
 <div class="row">
@@ -106,6 +118,7 @@
         var master_row = new MasterRow( {model : master_model});
         $('#master-table').append(master_row.render().el);
         var wcv = new WorkerCollectionView( { collection: new WorkerCollection() });
+        var dfwbv = new DefaultWorkerButtonView({ collection : new DefaultWorkerCollection()});
     });
 </script>
 {% endblock %}

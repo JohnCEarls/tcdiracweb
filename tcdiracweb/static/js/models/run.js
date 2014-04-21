@@ -76,3 +76,27 @@ var RunCollection = Backbone.Collection.extend({
     },
 });
 
+var PendingRunCollection = Backbone.Collection.extend({
+    model: Run,
+    url : '/cm/pending/run',
+
+    parse : function( response ){
+        if( response.data ){
+             return response.data;
+        }
+        return response;
+    },
+
+});
+
+var ActiveRunCollection = Backbone.collection.extend({
+    model: Run,
+    url : '/cm/active/run',
+
+    parse : function( response ){
+        if( response.data ){
+             return response.data;
+        }
+        return response;
+    },
+});
