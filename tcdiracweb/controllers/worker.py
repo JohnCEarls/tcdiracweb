@@ -2,6 +2,9 @@ import masterdirac.models.worker as wkr
 from tcdiracweb.utils.common import json_prep
 
 class Worker:
+    """
+    Read only worker object
+    """
     def __init__( self, app, worker_id=None):
         self.app = app
         self.worker_id = worker_id

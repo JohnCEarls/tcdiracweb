@@ -1,5 +1,8 @@
 import masterdirac.models.worker as wkr
 class DefaultWorker:
+    """
+    CRUD class for worker(GPU/Data clusters) configuration
+    """
     def __init__(self, app, cluster_type, aws_region):
         self.app = app
         self.cluster_type = cluster_type

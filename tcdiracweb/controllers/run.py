@@ -2,11 +2,17 @@ import masterdirac.models.run as run
 import boto
 
 class Run:
+    """
+    CRUD class for managing data runs
+    """
     def __init__(self, app, run_id=None):
         self.app = app
         self.run_id = run_id
 
     def GET( self ):
+        """
+        Returns a single run
+        """
         self.app.logger.info("Run.GET(%r)" % self.run_id)
         result = run.get_ANRun( self.run_id )
         self.app.logger.info("%r" % result)
@@ -21,6 +27,9 @@ class Run:
 
 
     def POST( self, request):
+        """
+        Insert/update run
+        """
         self.app.logger.info("Run.POST()")
         req = self._req_to_dict( request )
         self.app.logger.debug( "request %r" % req )
@@ -36,6 +45,9 @@ class Run:
         return (msg, 200)
 
     def DELETE( self ):
+        """
+        Delete a run
+        """
         self.app.logger.info("DELETE")
         try:
             run.delete_ANRun( self.run_id )
@@ -51,6 +63,9 @@ class Run:
             return ( msg, 404 )
 
     def _clean_response(self, resp ):
+        """
+        Converts variables to jsonable format
+        """
         if type(resp) is dict:
             for key, value in resp.iteritems():
                 try:
@@ -66,7 +81,7 @@ class Run:
 
     def _req_to_dict( self, request):
         """
-        Takes a Request object and returns a dictionary
+        Takes a Request object(form or json) and returns a dictionary
         """
         req_d = request.get_json(silent=True)
         if not req_d:
@@ -85,6 +100,10 @@ class Run:
 
 class PendingRun(Run):
 
+    """
+    Class for interacting with pending runs (runs in configure state)
+    Read only
+    """
     def __init__(self, app, run_id=None):
         Run.__init__(self, app, run_id)
 
@@ -133,7 +152,7 @@ class ActiveRun(Run):
     def POST( self, request ):
         """
         This is a request to interact with a Run
-        it gets passed to the master via s3
+        it gets passed to the master via sqs
         """
         req_d = self._req_to_dict( request )
         if self.run_id is not None:
