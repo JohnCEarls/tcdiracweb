@@ -68,6 +68,23 @@ def get_active_run( run_id = None ):
     return Response( json.dumps( msg ), mimetype='application/json',
                         status = status )
 
+@cm.route('/init/worker', methods=['POST'])
+def initialize_worker( ):
+    """
+    REQUEST LIKE:
+    {'cluster_type': ...
+        'aws_region':...
+        'master_name': ...}
+    """
+    import tcdiracweb.controllers.worker as wkr
+    w = wkr.Worker( current_app, None)
+    (msg, status) = w.POST( request, 'init')
+    return Response( json.dumps( msg ), mimetype="application/json",
+            status= status )
+
+
+
+
 @cm.route('/active/worker', methods=['GET'])
 @cm.route('/active/worker/<worker_id>', methods=['GET'])
 def get_active_worker( worker_id=None ):
@@ -159,10 +176,11 @@ def sc_log_update():
     else:
         return jsonify({'status': 'unchanged'})
 
-@cm.route('/config/<master_name>/<cluster_name>')
+@cm.route('/config/<worker_id>')
 def config(master_name, cluster_name):
     from masterdirac.models.worker import ANWorker
-    item = ANWorker.get(master_name, cluster_name) 
+    item = ANWorker.get(master_name, cluster_name)
+    worker_model = master.models.worker.get_ANWorker( worker_id = worker_id )
     if item:
         config_settings = item['starcluster_config']
         """= {
