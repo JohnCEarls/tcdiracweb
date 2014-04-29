@@ -12,6 +12,7 @@ import boto
 cm = Blueprint('cm', __name__, template_folder = 'templates', static_folder = 'static')
 
 @cm.route('/console')
+@secure_page
 def console():
     """
     Main console page.  Displays current run and clusters
@@ -83,6 +84,19 @@ def initialize_worker( ):
             status= status )
 
 
+@cm.route('/activate/worker/<worker_id>', methods=['POST'])
+def activate_worker( worker_id ):
+    """
+    REQUEST IRRELEVANT
+    ==================
+    should add some security features, but this is fine for now
+    """
+    
+    import tcdiracweb.controllers.worker as wkr
+    w = wkr.Worker( current_app, worker_id)
+    (msg, status) = w.POST( request, 'activate')
+    return Response( json.dumps( msg ), mimetype="application/json",
+            status= status )
 
 
 @cm.route('/active/worker', methods=['GET'])

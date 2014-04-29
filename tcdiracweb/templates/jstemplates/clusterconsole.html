@@ -203,11 +203,16 @@ if( isEmptyObject(key_pairs) ){
 </div>
 </script>
 <script type="text/template" id="template-defaultworker-dropdown">
-<li class="add-cluster">
+<li class="add-cluster-list-element">
     <a href="#" class="add-cluster">
         <span class="glyphicon glyphicon-plus"></span> 
         <%= cluster_type %>
     </a> 
     (<%=aws_region%>)
 </li>
+</script>
+<script type="text/template" id="template-worker-empty">
+<div class="panel-body" id="worker-empty">
+    <%= message %>
+</div>
 </script>

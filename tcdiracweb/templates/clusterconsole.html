@@ -118,7 +118,10 @@
         var master_row = new MasterRow( {model : master_model});
         $('#master-table').append(master_row.render().el);
         var wcv = new WorkerCollectionView( { collection: new WorkerCollection() });
-        var dfwbv = new DefaultWorkerButtonView({ collection : new DefaultWorkerCollection()});
+        app.master_model = master_model;
+        var dfwbv = new DefaultWorkerButtonView({ collection : new DefaultWorkerCollection(),
+                master_model : master_model 
+            });
     });
 </script>
 {% endblock %}

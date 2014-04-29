@@ -88,15 +88,43 @@ var WorkerCollectionView = Backbone.View.extend({
     initialize : function(){
         _.bindAll.apply(_, [this].concat(_.functions(this)))
         this.collection.bind('add', this.addWorker);
-        this.collection.fetch();
+        this.collection.fetch(
+            { add : true,
+              success : this.loadCompleteHandler,
+              error : this.loadErrorHandler
+            }
+        );
+
     },
     render : function(){
         return this;
     },
     addWorker : function( worker ){
+        this.removeEmpty();
         var worker_view = new WorkerRow( { model: worker } );
         this.$el.append( worker_view.render().el );
-    }
+    },
+
+    loadCompleteHandler : function( collection, response, options){
+        console.log("loadCompleteHandler");
+    },
+
+    loadErrorHandler : function( collection, response, options){
+        //what the server actually returned
+        var msg = response.responseJSON;
+        if( response && response.responseJSON ){
+            this.showEmpty( msg );
+        }
+    },
+    showEmpty : function( message ){
+        this.removeEmpty();//lazy
+        var t = _.template( $('#template-worker-empty').html() );
+        $('#large-container').append( t( message ) );
+    },
+    removeEmpty : function(){
+        $('#large-container').find('#worker-empty').remove();
+    },
+
 });
 
 var WorkerRow = Backbone.View.extend({
@@ -198,6 +226,7 @@ var DefaultWorkerButtonView = Backbone.View.extend({
     },
     addDW : function( default_worker ){
         console.log( default_worker );
+
         var worker_view = new DefaultWorkerDropdownView( { model: default_worker } );
         this.$el.find('#add-cluster-button').append( worker_view.render().el );
     }
@@ -220,6 +249,27 @@ var DefaultWorkerDropdownView = Backbone.View.extend({
         'click .add-cluster' : 'addCluster',
     },
     addCluster : function(){
+
+        if( app.master_model  ){
+            msg = { 
+                cluster_type : this.model.get('cluster_type'),
+                aws_region : this.model.get('aws_region'),
+                master_name : app.master_model.get('master_name')
+             }
+            console.log(msg);
+            $.post('/cm/init/worker', msg,
+                    function( data, textStatus, jqXHR )
+                    {
+                        console.log( 'successful init worker post' );
+                        console.log( data );
+                        console.log( textStatus );
+                        console.log( jqXHR );
+                        app.sending = false;
+                    }
+             );
+       } else {
+           alert('You cannot add a cluster without a master');
+       } 
        console.log("Add Cluster");
     },
 });
