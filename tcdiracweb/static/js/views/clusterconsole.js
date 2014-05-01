@@ -45,6 +45,7 @@ var MasterRow = Backbone.View.extend({
    
     events : {
         'click .master-info' : 'loadSideView',
+        'click .refresh' : 'refresh',
     },
     
     render : function() {
@@ -82,6 +83,10 @@ var MasterRow = Backbone.View.extend({
             app.sidePanel = new MasterView( {model: this.model} );
             $('#small-container').append( app.sidePanel.render().el );
         }
+    },
+    
+    refresh : function(){
+        this.model.fetch();
     },
 
 });
@@ -143,9 +148,12 @@ var WorkerRow = Backbone.View.extend({
         this.model.fetch();
         return this;
     },
+    
     events : {
         'click .worker-info' : 'loadSideView',
+        'click .refresh' : 'refresh',
     },
+    
     render : function() {
         if( this.model.get('status') === 0 ){
             this.className = "warning";
@@ -176,12 +184,15 @@ var WorkerRow = Backbone.View.extend({
                 //not there, so just continue
             }
             app.sidePanel = {};
-            
         }
         if( ! displayed){
             app.sidePanel = new WorkerView( {model: this.model} );
             $('#small-container').append( app.sidePanel.render().el );
         }
+    },
+
+    refresh : function(){
+        this.model.fetch();
     },
 
 });

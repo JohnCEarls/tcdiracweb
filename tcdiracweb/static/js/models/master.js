@@ -8,6 +8,7 @@ var Master = Backbone.Model.extend({
                 'status':-10
     },
     url: '/cm/master',
+
     parse : function ( response ){
         console.log( response );
         if( response.data ){
