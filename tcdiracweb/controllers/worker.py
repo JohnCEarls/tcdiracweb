@@ -1,11 +1,11 @@
 import masterdirac.models.worker as wkr
 import masterdirac.models.systemdefaults as sys_def_mdl
 import boto.sqs
+from boto.sqs.message import Message
 import json
 from tcdiracweb.utils.common import json_prep
 import random
 import string
-
 
 class Worker:
     """
@@ -54,6 +54,8 @@ class Worker:
             return self._init_worker( req_d )
         elif action == 'active':
             return self._activate_worker( req_d )
+        elif action == 'terminate':
+            return self._terminate_worker( req_d )
         else:
             msg = {'status': 'error',
                     'data' : req_d,
@@ -72,7 +74,7 @@ class Worker:
                     'master_name': req_d['master_name'],
                     'cluster_type': result['cluster_type'],
                     'aws_region' : result['aws_region'],
-                    'cluster_name' : self._gen_name( req_d['master_name'], 
+                    'cluster_name' : self._gen_name( req_d['master_name'],
                         result['prefix'] ),
                     'num_nodes': 0,
                     'status':wkr.CONFIG,
@@ -96,9 +98,9 @@ class Worker:
                 new_worker = wkr.insert_ANWorker(starcluster_config=starcluster_config,
                     **new_worker_settings)
             except Exception as e:
-                self.app.logger.error("Attempted to create [%r] [%r]" % ( 
+                self.app.logger.error("Attempted to create [%r] [%r]" % (
                     new_worker_settings, starcluster_config ))
-                self.app.logger.error("Received exception [%r]" % (e)) 
+                self.app.logger.error("Received exception [%r]" % (e))
                 pass
             if new_worker:
                 msg = {'status' : 'complete',
@@ -124,6 +126,9 @@ class Worker:
                 'data': launcher_message }
         status = 200
         return ( msg, status )
+
+    def _terminate_worker( self, req_d ):
+
 
 
 

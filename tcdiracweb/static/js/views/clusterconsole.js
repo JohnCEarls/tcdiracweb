@@ -42,12 +42,12 @@ var MasterRow = Backbone.View.extend({
         this.model.fetch();
         return this;
     },
-   
+
     events : {
         'click .master-info' : 'loadSideView',
         'click .refresh' : 'refresh',
     },
-    
+
     render : function() {
         if( this.model.get('status') === 0 ){
             this.className = "warning";
@@ -66,9 +66,9 @@ var MasterRow = Backbone.View.extend({
     loadSideView : function(){
         var displayed = false;
         if( app.sidePanel !== undefined ){
-            if(app.sidePanel.model && 
+            if(app.sidePanel.model &&
                 app.sidePanel.type === "WorkerView" &&
-                app.sidePanel.model.get("worker_id") === 
+                app.sidePanel.model.get("worker_id") ===
                 this.model.get("worker_id")){
                 displayed = true;
             }
@@ -84,7 +84,7 @@ var MasterRow = Backbone.View.extend({
             $('#small-container').append( app.sidePanel.render().el );
         }
     },
-    
+
     refresh : function(){
         this.model.fetch();
     },
@@ -125,11 +125,13 @@ var WorkerCollectionView = Backbone.View.extend({
             this.showEmpty( msg );
         }
     },
+
     showEmpty : function( message ){
         this.removeEmpty();//lazy
         var t = _.template( $('#template-worker-empty').html() );
         $('#large-container').append( t( message ) );
     },
+
     removeEmpty : function(){
         $('#large-container').find('#worker-empty').remove();
     },
@@ -148,16 +150,39 @@ var WorkerRow = Backbone.View.extend({
         this.model.fetch();
         return this;
     },
-    
-    events : {
+
+    events : function(){
+        var events = {
         'click .worker-info' : 'loadSideView',
         'click .refresh' : 'refresh',
+        };
+        if( this.model.get('status') === 0){
+            events['click .activate'] = 'activate';
+        }
+        console.log('events method');
+        return events;
     },
-    
+
+    inconsistent_state : function(){
+        if( app && app.master_model && 
+            app.master_model.get('master_name') !==
+                this.model.get('master_name') ){
+            return true;
+        } else {
+            return false;
+        }
+
+    },
+
     render : function() {
-        if( this.model.get('status') === 0 ){
+        if( this.inconsistent_state() ){
+            //points at wrong master
+            this.className = "danger";
+        } else if( this.model.get('status') === 0 ){
+            //under configuration
             this.className = "warning";
         } else if ( this.model.get('status') === 10 ){
+            //active cluster and associated with appropriate master
             this.className = "success";
         } else {
             this.className = "danger";
@@ -166,15 +191,17 @@ var WorkerRow = Backbone.View.extend({
         json_model['st_status'] = this.model.str_status();
         $(this.el).html( this.template( json_model ) );
         this.el.className = this.className;
+        this.manageControls();
+        this.delegateEvents();
         return this;
     },
 
     loadSideView : function(){
         var displayed = false;
         if( app.sidePanel !== undefined ){
-            if(app.sidePanel.model && 
+            if(app.sidePanel.model &&
                 app.sidePanel.type === "WorkerView" &&
-                app.sidePanel.model.get("worker_id") === 
+                app.sidePanel.model.get("worker_id") ===
                 this.model.get("worker_id")){
                 displayed = true;
             }
@@ -193,6 +220,24 @@ var WorkerRow = Backbone.View.extend({
 
     refresh : function(){
         this.model.fetch();
+    },
+
+    activate : function(){
+        this.model.activate();
+    },
+
+    terminate : function(){
+        this.model.terminate();
+    },
+
+    manageControls : function () {
+        //add functions to the button, depending on current status
+        if( this.model.get('status') === 0){
+            //worker has been initialized
+            this.$el.find('.dropdown-menu').append(
+                '<li><a href="#" class="activate">Activate</a></li>'
+            );
+        }
     },
 
 });
@@ -266,7 +311,7 @@ var DefaultWorkerDropdownView = Backbone.View.extend({
     addCluster : function(){
 
         if( app.master_model  ){
-            msg = { 
+            msg = {
                 cluster_type : this.model.get('cluster_type'),
                 aws_region : this.model.get('aws_region'),
                 master_name : app.master_model.get('master_name')
@@ -284,7 +329,7 @@ var DefaultWorkerDropdownView = Backbone.View.extend({
              );
        } else {
            alert('You cannot add a cluster without a master');
-       } 
+       }
        console.log("Add Cluster");
     },
 });

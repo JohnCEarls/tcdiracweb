@@ -1,4 +1,4 @@
-from flask import Blueprint, Response, make_response 
+from flask import Blueprint, Response, make_response
 from flask import jsonify, abort, current_app
 from flask import render_template, flash, request
 
@@ -49,13 +49,13 @@ def get_pending_run( run_id=None ):
     """
     import tcdiracweb.controllers.run as rn
     pr = rn.PendingRun(current_app, run_id )
-    msg, status = pr.GET( request ) 
+    msg, status = pr.GET( request )
     return Response( json.dumps( msg ), mimetype='application/json',
                         status = status )
 
 @cm.route('/active/run', methods=['GET'])
 @cm.route('/active/run/<run_id>', methods=['GET', 'POST'])
-def get_active_run( run_id = None ): 
+def get_active_run( run_id = None ):
     """
     API
     Returns an active run
@@ -68,6 +68,20 @@ def get_active_run( run_id = None ):
         msg, status = ar.POST( request )
     return Response( json.dumps( msg ), mimetype='application/json',
                         status = status )
+
+@cm.route('/terminate/worker/<worker_id>', methods=['POST'])
+def terminate_worker( worker_id ):
+    """
+    REQUEST LIKE:
+    {'cluster_type': ...
+        'aws_region':...
+        'master_name': ...}
+    """
+    import tcdiracweb.controllers.worker as wkr
+    w = wkr.Worker( current_app, None)
+    (msg, status) = w.POST( request, 'terminate')
+    return Response( json.dumps( msg ), mimetype="application/json",
+            status= status )
 
 @cm.route('/init/worker', methods=['POST'])
 def initialize_worker( ):
@@ -91,10 +105,10 @@ def activate_worker( worker_id ):
     ==================
     should add some security features, but this is fine for now
     """
-    
+
     import tcdiracweb.controllers.worker as wkr
     w = wkr.Worker( current_app, worker_id)
-    (msg, status) = w.POST( request, 'activate')
+    (msg, status) = w.POST( request, 'active')
     return Response( json.dumps( msg ), mimetype="application/json",
             status= status )
 
@@ -155,12 +169,12 @@ def manage_worker_default():
 @secure_page
 def worker_default( cluster_type=None, aws_region=None ):
     """
-    API 
-    to getting/setting information about 
+    API
+    to getting/setting information about
     the default worker cluster configurations
     """
     current_app.logger.info( "worker_default-\n%r" % request )
-    from controllers.defaultworker import DefaultWorker 
+    from controllers.defaultworker import DefaultWorker
     dw = DefaultWorker( current_app, cluster_type, aws_region)
     if request.method == 'POST':
         msg, status = dw.POST( request )
@@ -232,7 +246,7 @@ def create_cluster():
             return jsonify({'status': 'error', 'error': 'Invalid Request'})
         s_bin = '/home/sgeadmin/.local/bin/starcluster'
         url =  'https://price.adversary.us/scconfig'
-        master_name = instance_id 
+        master_name = instance_id
         args = (s_bin, url, master_name, cluster_name)
         p = multiprocessing.Process(target=starclustercfg.run_sc, args=args)
         p.start()
@@ -248,22 +262,24 @@ def gpu_cluster():
     """
     Deprecated
     """
+    raise Exception("Deprecated")
+    #delete after able to start, restart, etc ...
     from tcdiracweb.utils import starclustercfg
     s_bin = '/home/sgeadmin/.local/bin/starcluster'
     url =  'https://price.adversary.us/scconfig'
-    
+
     instance_id =  boto.utils.get_instance_identity()['document']['instanceId']
-    master_name = instance_id 
+    master_name = instance_id
     valid_actions = ['start', 'stop', 'status']
     current_app.logger.error( "%r" % request.form )
     if request.method == 'POST':
         cluster_name = request.form['cluster_name']
         if request.form['component'] == 'logserver-daemon':
             if request.form['action'] in valid_actions:
-                args = (s_bin, url, master_name, cluster_name, 
+                args = (s_bin, url, master_name, cluster_name,
                         request.form['action'])
                 p = multiprocessing.Process(
-                        target=starclustercfg.gpu_logserver_daemon, 
+                        target=starclustercfg.gpu_logserver_daemon,
                         args=args)
                 p.start()
             else:
@@ -278,12 +294,12 @@ def gpu_cluster():
                 abort(400)
         elif request.form['component'] == 'restart':
             args = (s_bin, url, master_name, cluster_name)
-            p = multiprocessing.Process( target=starclustercfg.cluster_restart, 
+            p = multiprocessing.Process( target=starclustercfg.cluster_restart,
                         args=args)
             p.start()
         elif request.form['component'] == 'terminate':
             args = (s_bin, url, master_name, cluster_name)
-            p = multiprocessing.Process( target=starclustercfg.cluster_terminate, 
+            p = multiprocessing.Process( target=starclustercfg.cluster_terminate,
                         args=args)
             p.start()
         else:
@@ -298,23 +314,25 @@ def data_cluster():
     """
     Deprecated
     """
+    raise Exception("Deprecated")
+    #delete after able to start, restart, etc ...
     from tcdiracweb.utils import starclustercfg
     s_bin = '/home/sgeadmin/.local/bin/starcluster'
     url =  'https://price.adversary.us/scconfig'
     instance_id =  boto.utils.get_instance_identity()['document']['instanceId']
-    master_name = instance_id 
+    master_name = instance_id
     valid_actions = ['start', 'stop', 'status']
     current_app.logger.error( "%r" % request.form )
     if request.method == 'POST':
         cluster_name = request.form['cluster_name']
         if request.form['component'] == 'terminate':
             args = (s_bin, url, master_name, cluster_name)
-            p = multiprocessing.Process( target=starclustercfg.cluster_terminate, 
+            p = multiprocessing.Process( target=starclustercfg.cluster_terminate,
                         args=args)
             p.start()
         elif request.form['component'] == 'restart':
             args = (s_bin, url, master_name, cluster_name)
-            p = multiprocessing.Process( target=starclustercfg.cluster_restart, 
+            p = multiprocessing.Process( target=starclustercfg.cluster_restart,
                         args=args)
             p.start()
         else:
@@ -383,7 +401,7 @@ def cluster_get( cluster_name = None ):
             import json
             res = StarclusterConfig.scan(master_name__eq = instance_id )
             if res:
-                return Response( json.dumps([r.attribute_values for r in res]), 
+                return Response( json.dumps([r.attribute_values for r in res]),
                         mimetype='application/json')
             else:
                 abort(400)

@@ -20,6 +20,28 @@ var Worker = Backbone.Model.extend({
         return status_map[ this.get('status').toString() ];
     },
 
+    activate : function(){
+        var url = '/cm/activate/worker/' + this.get('worker_id');
+        var msg = { 'todo': 'add security features'}
+        $.post( url )
+            .done( function(data, textStatus, jqXHR){
+                console.log( 'Activate done.' );
+                console.log( data );
+                console.log( textStatus );
+                console.log( jqXHR );
+               })
+            .fail( function( jqXHR, textStatus, errorThrown ) {
+                console.log( 'Activate error' );
+                console.log( jqXHR );
+                console.log( textStatus );
+                console.log( errorThrown );
+            })
+
+    },
+
+    terminate : function(){
+
+    }
 
 });
 
