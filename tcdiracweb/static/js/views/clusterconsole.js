@@ -1,3 +1,4 @@
+// views/clusterconsole.js
 var MasterView = Backbone.View.extend({
     type : "MasterView",
     template : _.template( $('#template-master').html() ),
@@ -34,15 +35,18 @@ var MasterRow = Backbone.View.extend({
     className : "default",
     id : "masterRow",
     template : _.template( $('#template-cluster-row-master').html() ),
+
     initialize : function(){
         _.bindAll.apply(_, [this].concat(_.functions(this)));
         this.model.on('change', this.render, this);
         this.model.fetch();
         return this;
     },
+   
     events : {
         'click .master-info' : 'loadSideView',
     },
+    
     render : function() {
         if( this.model.get('status') === 0 ){
             this.className = "warning";
