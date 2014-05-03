@@ -1,4 +1,5 @@
 import masterdirac.models.worker as wkr
+import masterdirac.models.master as mstr
 import masterdirac.models.systemdefaults as sys_def_mdl
 import boto.sqs
 from boto.sqs.message import Message
@@ -68,7 +69,9 @@ class Worker:
                 'data' : '',
                 'message': 'Unable to initialize worker'}
         status = 404
-        result = wkr.get_ANWorkerBase( req_d['cluster_type'], req_d['aws_region'] )
+        result = None
+        if( req_d['master_name'] and req_d['master_name'] != "None"):
+            result = wkr.get_ANWorkerBase( req_d['cluster_type'], req_d['aws_region'] )
         if result:
             new_worker_settings = {
                     'master_name': req_d['master_name'],
@@ -78,7 +81,6 @@ class Worker:
                         result['prefix'] ),
                     'num_nodes': 0,
                     'status':wkr.CONFIG,
-
             }
             starcluster_config = {
                     'cluster_name': new_worker_settings['cluster_name'],
@@ -128,9 +130,45 @@ class Worker:
         return ( msg, status )
 
     def _terminate_worker( self, req_d ):
-
-
-
+        #check if 
+        worker = wkr.get_ANWorker( worker_id=self.worker_id )
+        self.app.logger.info("%r" % worker )
+        if worker['status'] in [wkr.CONFIG, wkr.NA]:
+            worker = wkr.update_ANWorker( self.worker_id, 
+                        status=wkr.TERMINATED)
+            msg = {'status':'complete',
+                    'data' : json_prep( worker )}
+            status = 200
+        elif wkr.confirm_worker_running( worker ):
+            #we have an active cluster
+            master = mstr.get_active_master()
+            if master:
+                launcher_message = {'action':'terminate',
+                                    'worker_id': self.worker_id}
+                launcher_config = sys_def_mdl.get_system_defaults(
+                        setting_name = 'launcher_config', component='Master' )
+                conn = boto.sqs.connect_to_region('us-east-1')
+                lq = conn.create_queue( launcher_config['launcher_sqs_in'] )
+                worker = wkr.update_ANWorker( self.worker_id, 
+                        status=wkr.MARKED_FOR_TERMINATION)
+                mess = Message(body=json.dumps( launcher_message ))
+                lq.write( mess )
+                msg = {'status':'complete',
+                        'data' : json_prep( worker ) }
+                status = 200
+            else:
+                msg = {'status': 'error',
+                        'data' : {'worker_id': self.worker_id},
+                        'message' : 'Running Cluster without an active master'
+                        }
+                status = 409 #Conflict
+        else:
+            worker = wkr.update_ANWorker( self.worker_id, 
+                        status=wkr.TERMINATED_WITH_ERROR)
+            msg = {'status':'complete',
+                    'data' : json_prep( worker )}
+            status = 200
+        return (msg, status)
 
     def _gen_name( self, master_name,  prefix ):
         N = 5

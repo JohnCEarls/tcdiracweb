@@ -108,6 +108,7 @@ var WorkerCollectionView = Backbone.View.extend({
     render : function(){
         return this;
     },
+
     addWorker : function( worker ){
         this.removeEmpty();
         var worker_view = new WorkerRow( { model: worker } );
@@ -147,6 +148,7 @@ var WorkerRow = Backbone.View.extend({
     initialize : function(){
         _.bindAll.apply(_, [this].concat(_.functions(this)));
         this.model.on('change', this.render, this);
+        app.master_model.on('change', this.render, this);
         this.model.fetch();
         return this;
     },
@@ -155,18 +157,64 @@ var WorkerRow = Backbone.View.extend({
         var events = {
         'click .worker-info' : 'loadSideView',
         'click .refresh' : 'refresh',
+        'click .terminate' : 'terminate',
         };
-        if( this.model.get('status') === 0){
-            events['click .activate'] = 'activate';
+        switch( this.model.get('status') )
+        {
+            case 0: //configured
+                events['click .activate'] = 'activate';
+                break;
+            case 10: //Starting
+                break;
+            case 20: //ready
+                break;
+            case 30: //running
+                break;
+            case 35: //marked for termination
+                break;
+            case 40:
+                break;
+            default:
+                console.log('Error: unmatched status');
+                break;
         }
-        console.log('events method');
         return events;
+    },
+
+    manageControls : function () {
+        //add functions to the button, depending on current status
+        var dm = this.$el.find('.dropdown-menu');
+        var status = this.model.get('status');
+        switch( status )
+        {
+            case 0: //configured
+                dm.append('<li><a href="#" class="activate">Activate</a></li>');
+                dm.append( '<li><a href="#" class="terminate">Remove</a></li>');
+                break;
+            case 10: //Starting
+                dm.append( '<li><a href="#" class="terminate">Terminate</a></li>');
+                break;
+            case 20: //ready
+                dm.append( '<li><a href="#" class="terminate">Terminate</a></li>');
+                break;
+            case 30: //running
+                dm.append( '<li><a href="#" class="terminate">Terminate</a></li>');
+                break;
+            case 35: //marked for termination
+                break;
+            case 40:
+                break;
+            default:
+                console.log('Error: unmatched status');
+                break;
+        }
     },
 
     inconsistent_state : function(){
         if( app && app.master_model && 
             app.master_model.get('master_name') !==
                 this.model.get('master_name') ){
+            console.log( this.model.get('master_name') );
             return true;
         } else {
             return false;
@@ -227,17 +275,8 @@ var WorkerRow = Backbone.View.extend({
     },
 
     terminate : function(){
+        console.log('terminate in view');
         this.model.terminate();
-    },
-
-    manageControls : function () {
-        //add functions to the button, depending on current status
-        if( this.model.get('status') === 0){
-            //worker has been initialized
-            this.$el.find('.dropdown-menu').append(
-                '<li><a href="#" class="activate">Activate</a></li>'
-            );
-        }
     },
 
 });
@@ -310,7 +349,7 @@ var DefaultWorkerDropdownView = Backbone.View.extend({
     },
     addCluster : function(){
 
-        if( app.master_model  ){
+        if( app.master_model && app.master_model.get('master_name') !== "None"){
             msg = {
                 cluster_type : this.model.get('cluster_type'),
                 aws_region : this.model.get('aws_region'),
@@ -320,11 +359,11 @@ var DefaultWorkerDropdownView = Backbone.View.extend({
             $.post('/cm/init/worker', msg,
                     function( data, textStatus, jqXHR )
                     {
+                        app.worker_collection.add( new Worker(data.data) );
                         console.log( 'successful init worker post' );
                         console.log( data );
                         console.log( textStatus );
                         console.log( jqXHR );
-                        app.sending = false;
                     }
              );
        } else {

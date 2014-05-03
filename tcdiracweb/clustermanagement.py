@@ -69,20 +69,6 @@ def get_active_run( run_id = None ):
     return Response( json.dumps( msg ), mimetype='application/json',
                         status = status )
 
-@cm.route('/terminate/worker/<worker_id>', methods=['POST'])
-def terminate_worker( worker_id ):
-    """
-    REQUEST LIKE:
-    {'cluster_type': ...
-        'aws_region':...
-        'master_name': ...}
-    """
-    import tcdiracweb.controllers.worker as wkr
-    w = wkr.Worker( current_app, None)
-    (msg, status) = w.POST( request, 'terminate')
-    return Response( json.dumps( msg ), mimetype="application/json",
-            status= status )
-
 @cm.route('/init/worker', methods=['POST'])
 def initialize_worker( ):
     """
@@ -112,6 +98,18 @@ def activate_worker( worker_id ):
     return Response( json.dumps( msg ), mimetype="application/json",
             status= status )
 
+
+@cm.route('/terminate/worker/<worker_id>', methods=['POST'])
+def terminate_worker( worker_id ):
+    """
+    Terminate a worker cluster if it is running
+    Cancel in dbase if not
+    """
+    import tcdiracweb.controllers.worker as wkr
+    w = wkr.Worker( current_app, worker_id)
+    (msg, status) = w.POST( request, 'terminate')
+    return Response( json.dumps( msg ), mimetype="application/json",
+            status= status )
 
 @cm.route('/active/worker', methods=['GET'])
 @cm.route('/active/worker/<worker_id>', methods=['GET'])
