@@ -183,6 +183,30 @@ def worker_default( cluster_type=None, aws_region=None ):
     return Response( json.dumps( msg ), mimetype='application/json',
                         status = status )
 
+@cm.route('/config/<worker_id>')
+def config(worker_id):
+    import masterdirac.models.worker as wrkr
+
+    worker_model = wrkr.get_ANWorker( worker_id = worker_id )
+    if worker_model:
+        config_settings = worker_model['starcluster_config']
+        """= {
+        'cluster_name':'dummy-cluster',
+        'aws_region':'us-east-1',
+        'key_name': 'somekey',
+        'key_location': '/home/sgeadmin/somekey.key',
+        'cluster_size': 1,
+        'node_instance_type': 'm1.xlarge',
+        'node_image_id': 'ami-1234567',
+        'iam_profile':'some-profile',
+        'force_spot_master':True,
+        'spot_bid':2.00,
+        'plugins':'p1,p2,p3'
+    }"""
+    return render_template('sc-main.cfg', **config_settings) +\
+        render_template('sc-plugins.cfg') + \
+        render_template('sc-security-group.cfg')
+
 @cm.route('/scconfig/<master_name>/<cluster_name>')
 def scget_config(master_name, cluster_name):
     from utils.starclustercfg import AdversaryServer, SCConfigError
@@ -201,30 +225,6 @@ def sc_log_update():
         return jsonify({'status': 'updates', 'clusters': runs})
     else:
         return jsonify({'status': 'unchanged'})
-
-@cm.route('/config/<worker_id>')
-def config(master_name, cluster_name):
-    from masterdirac.models.worker import ANWorker
-    item = ANWorker.get(master_name, cluster_name)
-    worker_model = master.models.worker.get_ANWorker( worker_id = worker_id )
-    if item:
-        config_settings = item['starcluster_config']
-        """= {
-        'cluster_name':'dummy-cluster',
-        'aws_region':'us-east-1',
-        'key_name': 'somekey',
-        'key_location': '/home/sgeadmin/somekey.key',
-        'cluster_size': 1,
-        'node_instance_type': 'm1.xlarge',
-        'node_image_id': 'ami-1234567',
-        'iam_profile':'some-profile',
-        'force_spot_master':True,
-        'spot_bid':2.00,
-        'plugins':'p1,p2,p3'
-    }"""
-    return render_template('sc-main.cfg', **config_settings) +\
-        render_template('sc-plugins.cfg') + \
-        render_template('sc-security-group.cfg')
 
 @cm.route('/createcluster', methods=['POST'])
 @secure_page
