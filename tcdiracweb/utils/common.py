@@ -8,4 +8,6 @@ def json_prep( dct ):
             dct[k] = v.isoformat()
         except AttributeError as ae:
             pass
+            if type(v) == set:
+                dct[k] = list(v)
     return dct

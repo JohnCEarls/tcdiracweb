@@ -12,17 +12,24 @@ var Worker = Backbone.Model.extend({
     str_status : function(){
         var status_map = {
             '-10':'NA',
+            '-5': 'Terminated with error',
             '0':'Configured',
             '10': 'Starting',
             '20':'Ready',
             '30': 'Running',
             '35': 'Marked for termination',
+            '37': 'Terminating',
             '40':'Terminated'}
         return status_map[ this.get('status').toString() ];
     },
 
     activate : function(){
-        var url = '/cm/activate/worker/' + this.get('worker_id');
+        var url = '';
+        if( this.get('status') === 0 ){
+            var url = '/cm/activate/worker/' + this.get('worker_id');
+        }else if( this.get('status') === 20 ){
+            var url = '/cm/activate/server/' + this.get('worker_id');
+        }
         var msg = { 'todo': 'add security features'}
         $.post( url )
             .done( function(data, textStatus, jqXHR){
@@ -59,7 +66,6 @@ var Worker = Backbone.Model.extend({
                 console.log( textStatus );
                 console.log( errorThrown );
             })
-
         console.log('Worker Model terminate')
     },
 

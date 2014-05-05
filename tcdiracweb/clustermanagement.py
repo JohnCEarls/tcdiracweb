@@ -30,7 +30,7 @@ def get_master():
     master = mstr.get_active_master()
     if master is not None:
         msg = {'status' : 'complete',
-                   'data' : json_prep(master) }
+               'data' : json_prep(master) }
         status = 200
     else:
         msg = {'status' : 'error',
@@ -97,6 +97,21 @@ def activate_worker( worker_id ):
     (msg, status) = w.POST( request, 'active')
     return Response( json.dumps( msg ), mimetype="application/json",
             status= status )
+
+@cm.route('/activate/server/<worker_id>', methods=['POST'])
+def activate_server( worker_id ):
+    """
+    REQUEST IRRELEVANT
+    ==================
+    should add some security features, but this is fine for now
+    """
+
+    import tcdiracweb.controllers.worker as wkr
+    w = wkr.Worker( current_app, worker_id)
+    (msg, status) = w.POST( request, 'activate-server')
+    return Response( json.dumps( msg ), mimetype="application/json",
+            status= status )
+
 
 
 @cm.route('/terminate/worker/<worker_id>', methods=['POST'])

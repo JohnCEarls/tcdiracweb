@@ -157,20 +157,25 @@ var WorkerRow = Backbone.View.extend({
         var events = {
         'click .worker-info' : 'loadSideView',
         'click .refresh' : 'refresh',
-        'click .terminate' : 'terminate',
         };
         switch( this.model.get('status') )
         {
             case 0: //configured
                 events['click .activate'] = 'activate';
+                events['click .terminate'] = 'terminate';
                 break;
             case 10: //Starting
+                events['click .terminate'] = 'terminate';
                 break;
             case 20: //ready
+                events['click .terminate'] = 'terminate';
+                events['click .activate'] = 'activate';
                 break;
             case 30: //running
+                events['click .terminate'] = 'terminate';
                 break;
             case 35: //marked for termination
+                events['click .terminate'] = 'terminate';
                 break;
             case 40:
                 break;
@@ -188,21 +193,21 @@ var WorkerRow = Backbone.View.extend({
         switch( status )
         {
             case 0: //configured
-                dm.append('<li><a href="#" class="activate">Activate</a></li>');
+                dm.append('<li><a href="#" class="activate">Launch Cluster</a></li>');
                 dm.append( '<li><a href="#" class="terminate">Remove</a></li>');
                 break;
             case 10: //Starting
                 dm.append( '<li><a href="#" class="terminate">Terminate</a></li>');
                 break;
             case 20: //ready
+                dm.append('<li><a href="#" class="activate">Start Server</a></li>');
                 dm.append( '<li><a href="#" class="terminate">Terminate</a></li>');
                 break;
             case 30: //running
                 dm.append( '<li><a href="#" class="terminate">Terminate</a></li>');
                 break;
             case 35: //marked for termination
-                break;
-            case 40:
+                dm.append( '<li><a href="#" class="terminate">Remove</a></li>');
                 break;
             default:
                 console.log('Error: unmatched status');
@@ -219,22 +224,41 @@ var WorkerRow = Backbone.View.extend({
         } else {
             return false;
         }
-
     },
 
     render : function() {
+        switch( this.model.get('status') )
+        {
+            case 0: //configured
+                this.className = "default";
+                break;
+            case 10: //Starting
+                this.className = "info";
+                break;
+            case 20: //ready
+                this.className = "primary";
+                break;
+            case 30: //running
+                this.className = "success";
+                break;
+            case 35: //marked for termination
+                this.className = "warning"
+                break;
+            case 37: //terminating
+                this.className = "warning"
+                break;
+            case 40://terminated
+                this.className = "default"
+                break;
+            default:
+                this.className = "danger"
+                console.log('Error: unmatched status');
+                break;
+        }
         if( this.inconsistent_state() ){
             //points at wrong master
             this.className = "danger";
-        } else if( this.model.get('status') === 0 ){
-            //under configuration
-            this.className = "warning";
-        } else if ( this.model.get('status') === 10 ){
-            //active cluster and associated with appropriate master
-            this.className = "success";
-        } else {
-            this.className = "danger";
-        }
+        } 
         json_model = this.model.toJSON();
         json_model['st_status'] = this.model.str_status();
         $(this.el).html( this.template( json_model ) );
@@ -296,12 +320,33 @@ var WorkerView = Backbone.View.extend({
 
     render : function() {
         var st_status = this.model.str_status();
-        if( this.model.get('status') === 0 ){
-            this.className = "panel panel-warning";
-        } else if ( this.model.get('status') === 10 ){
-            this.className = "panel panel-success";
-        } else {
-            this.className = "panel panel-danger";
+        switch( this.model.get('status') )
+        {
+            case 0: //configured
+                this.className = "default";
+                break;
+            case 10: //Starting
+                this.className = "info";
+                break;
+            case 20: //ready
+                this.className = "primary";
+                break;
+            case 30: //running
+                this.className = "success";
+                break;
+            case 35: //marked for termination
+                this.className = "warning"
+                break;
+            case 37: //terminating
+                this.className = "warning"
+                break;
+            case 40://terminated
+                this.className = "default"
+                break;
+            default:
+                this.className = "danger"
+                console.log('Error: unmatched status');
+                break;
         }
         json_model = this.model.toJSON();
         json_model['st_status'] = st_status;
