@@ -41,15 +41,23 @@ def get_master():
                         status = status )
 
 @cm.route('/pending/run', methods=['GET'])
-@cm.route('/pending/run/<run_id>', methods=['GET'])
+@cm.route('/pending/run/<run_id>', methods=['GET', 'POST'])
 def get_pending_run( run_id=None ):
     """
     API
     Returns runs that are configured, but not active
+
+    a post requests that master change the run status from config to INIT
     """
     import tcdiracweb.controllers.run as rn
     pr = rn.PendingRun(current_app, run_id )
-    msg, status = pr.GET( request )
+    if request.method == 'GET':
+        msg, status = pr.GET( request )
+    elif request.method == 'POST':
+        #this is only for activating a run
+        #that causes a message to be sent to the master
+        current_app.logger.debug('Activating run_id[%s]' % run_id)
+        msg, status = pr.POST( request )
     return Response( json.dumps( msg ), mimetype='application/json',
                         status = status )
 

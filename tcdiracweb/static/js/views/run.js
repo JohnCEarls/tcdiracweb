@@ -22,6 +22,7 @@ var RunView = Backbone.View.extend({
     events : {
         'click .edit': 'loadEditForm',
         'click .delete': 'deleteModel',
+        'click .initialize' : 'initializeRun',
     },
 
     loadEditForm : function(){
@@ -53,6 +54,15 @@ var RunView = Backbone.View.extend({
             console.log( textStatus );
             console.log( errorThrown );
         });
+    },
+
+    initializeRun : function(){
+        if( this.model.get('status') == -10 ){
+            this.model.initializeRun();
+        } else {
+            alert('You can only initialize runs with CONFIG(-10) status');
+        }
+        
     },
 }); 
 
@@ -177,6 +187,8 @@ var RunFormView = Backbone.View.extend({
             this.model.save( data );
         }
         this.remove();
-    }
+    },
+
+
 
 });

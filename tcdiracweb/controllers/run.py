@@ -1,6 +1,11 @@
 import masterdirac.models.run as run
 import boto
 
+import masterdirac.models.systemdefaults as sys_def_mdl
+import boto.sqs
+from boto.sqs.message import Message
+import json
+
 class Run:
     """
     CRUD class for managing data runs
@@ -99,7 +104,6 @@ class Run:
         return req_d
 
 class PendingRun(Run):
-
     """
     Class for interacting with pending runs (runs in configure state)
     Read only
@@ -120,7 +124,27 @@ class PendingRun(Run):
         return (msg, status)
 
     def POST( self, request):
-        raise Exception("Cannot edit PendingRun Object")
+        req_d = self._req_to_dict( request )
+        return self._activate_run( req_d )
+
+    def _activate_run( self, req_d ):
+        """
+        Generate message for launcher in queue to request that
+        the master starts the cluster
+        """
+        launcher_message = {'action': 'activate-run',
+                            'worker_id': self.run_id,
+                }
+        launcher_config = sys_def_mdl.get_system_defaults(
+                setting_name = 'launcher_config', component='Master' )
+        conn = boto.sqs.connect_to_region('us-east-1')
+        lq = conn.create_queue( launcher_config['launcher_sqs_in'] )
+        mess = Message(body=json.dumps( launcher_message ))
+        lq.write( mess )
+        msg = {'status': 'complete',
+                'data': launcher_message }
+        status = 200
+        return ( msg, status )
 
     def DELETE( self ):
         raise Exception("Cannot delete PendingRun Object")

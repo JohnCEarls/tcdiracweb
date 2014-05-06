@@ -59,8 +59,24 @@ var Run = Backbone.Model.extend({
             return response.data;
         }
         return response;
-    }
+    },
 
+    initializeRun : function(){
+        var url = '/cm/pending/run/' + this.get('run_id');
+        var msg = { 'todo': 'add security features'}
+        that = this;
+        if( this.get('status') == -10){
+        $.post( url )
+            .done( function(data, textStatus, jqXHR){
+                alert('Initialization request sent');
+             })
+            .fail( function( jqXHR, textStatus, errorThrown ) {
+                alert("Error on startup " + textStatus);
+            });
+        } else {
+            alert( 'Invalid status for initialization(' + this.get('status') + ')' );
+        }
+    },
 });
 
 var RunCollection = Backbone.Collection.extend({
@@ -89,7 +105,7 @@ var PendingRunCollection = Backbone.Collection.extend({
 
 });
 
-var ActiveRunCollection = Backbone.collection.extend({
+var ActiveRunCollection = Backbone.Collection.extend({
     model: Run,
     url : '/cm/active/run',
 
