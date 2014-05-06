@@ -169,10 +169,13 @@ var WorkerRow = Backbone.View.extend({
                 break;
             case 20: //ready
                 events['click .terminate'] = 'terminate';
-                events['click .activate'] = 'activate';
+                events['click .start'] = 'start';
                 break;
             case 30: //running
                 events['click .terminate'] = 'terminate';
+                events['click .status'] = 'status_refresh';
+                events['click .stop'] = 'stop';
+
                 break;
             case 35: //marked for termination
                 events['click .terminate'] = 'terminate';
@@ -193,21 +196,35 @@ var WorkerRow = Backbone.View.extend({
         switch( status )
         {
             case 0: //configured
-                dm.append('<li><a href="#" class="activate">Launch Cluster</a></li>');
-                dm.append( '<li><a href="#" class="terminate">Remove</a></li>');
+                dm.append('<li><a href="#" class="activate"><span class="glyphicon glyphicon-music"></span> Launch Cluster</a></li>');
+                dm.append( '<li><a href="#" class="terminate">' +
+                          '<span class="glyphicon glyphicon-remove"></span>' +
+                          ' Cancel Cluster</a></li>');
                 break;
             case 10: //Starting
-                dm.append( '<li><a href="#" class="terminate">Terminate</a></li>');
+                dm.append( '<li><a href="#" class="terminate">'+
+                          '<span class="glyphicon glyphicon-remove"></span>'+
+                          ' Terminate Cluster</a></li>');
                 break;
             case 20: //ready
-                dm.append('<li><a href="#" class="activate">Start Server</a></li>');
-                dm.append( '<li><a href="#" class="terminate">Terminate</a></li>');
+                dm.append( '<li><a href="#" class="terminate">' +
+                          '<span class="glyphicon glyphicon-remove"></span>' +
+                          'Terminate Cluster</a></li>');
+                dm.append('<li class="divider"></li>');
+                dm.append('<li><a href="#" class="start"><span class="glyphicon glyphicon-heart"></span> Start Server</a></li>');
                 break;
             case 30: //running
-                dm.append( '<li><a href="#" class="terminate">Terminate</a></li>');
+                dm.append('<li><a href="#" class="terminate">' +
+                          '<span class="glyphicon glyphicon-remove"></span>'+
+                          ' Terminate Cluster</a></li>');
+                dm.append('<li class="divider"></li>');
+                dm.append('<li><a href="#" class="status"><span class="glyphicon glyphicon-info-sign"></span> Refresh Server Status</a></li>');
+                dm.append('<li><a href="#" class="stop"><span class="glyphicon glyphicon-exclamation-sign"></span> Stop Server</a></li>');
                 break;
             case 35: //marked for termination
-                dm.append( '<li><a href="#" class="terminate">Remove</a></li>');
+                dm.append( '<li><a href="#" class="terminate">' +
+                          '<span class="glyphicon glyphicon-remove"></span>' +
+                          ' Remove</a></li>');
                 break;
             default:
                 console.log('Error: unmatched status');
@@ -297,6 +314,18 @@ var WorkerRow = Backbone.View.extend({
     activate : function(){
         this.model.activate();
     },
+    
+    start : function(){
+        this.model.start();
+    },
+
+    stop : function(){
+        this.model.stop();
+    },
+
+    status_refresh : function(){
+        this.model.status_refresh();
+    },
 
     terminate : function(){
         console.log('terminate in view');
@@ -320,31 +349,32 @@ var WorkerView = Backbone.View.extend({
 
     render : function() {
         var st_status = this.model.str_status();
+        this.className = "panel panel-"
         switch( this.model.get('status') )
         {
             case 0: //configured
-                this.className = "default";
+                this.className += "default";
                 break;
             case 10: //Starting
-                this.className = "info";
+                this.className += "info";
                 break;
             case 20: //ready
-                this.className = "primary";
+                this.className += "primary";
                 break;
             case 30: //running
-                this.className = "success";
+                this.className += "success";
                 break;
             case 35: //marked for termination
-                this.className = "warning"
+                this.className += "warning";
                 break;
             case 37: //terminating
-                this.className = "warning"
+                this.className += "warning";
                 break;
             case 40://terminated
-                this.className = "default"
+                this.className += "default";
                 break;
             default:
-                this.className = "danger"
+                this.className += "danger"
                 console.log('Error: unmatched status');
                 break;
         }

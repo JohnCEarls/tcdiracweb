@@ -27,24 +27,88 @@ var Worker = Backbone.Model.extend({
         var url = '';
         if( this.get('status') === 0 ){
             var url = '/cm/activate/worker/' + this.get('worker_id');
-        }else if( this.get('status') === 20 ){
-            var url = '/cm/activate/server/' + this.get('worker_id');
+        } else {
+            alert(this.str_status + " is inconsistent with a launch state");
+            return;
         }
+
+        var msg = { 'todo': 'add security features'}
+        that = this;
+        $.post( url )
+            .done( function(data, textStatus, jqXHR){
+                setTimeout( function(){
+                    that.fetch();
+                }, 3000);
+               })
+            .fail( function( jqXHR, textStatus, errorThrown ) {
+                alert("Error on startup " + textStatus);
+            });
+
+    },
+    start : function(){
+        var url = '';
+        if( this.get('status') === 20 ){
+            var url = '/cm/activate/server/' + this.get('worker_id');
+        } else {
+            alert(this.str_status + " is inconsistent with a launch state");
+            return;
+        }
+
+        that = this;
         var msg = { 'todo': 'add security features'}
         $.post( url )
             .done( function(data, textStatus, jqXHR){
-                console.log( 'Activate done.' );
-                console.log( data );
-                console.log( textStatus );
-                console.log( jqXHR );
+                setTimeout( function(){
+                    that.fetch();
+                }, 10000);
                })
             .fail( function( jqXHR, textStatus, errorThrown ) {
-                console.log( 'Activate error' );
-                console.log( jqXHR );
-                console.log( textStatus );
-                console.log( errorThrown );
-            })
+            });
+    },
+    stop : function(){
+        var url = '';
+        if( this.get('status') === 30 ){
+            var url = '/cm/stop/server/' + this.get('worker_id');
+        } else {
+            alert(this.str_status + " is inconsistent with a launch state");
+            return;
+        }
+        that = this;
 
+        var msg = { 'todo': 'add security features'}
+        $.post( url )
+            .done( function(data, textStatus, jqXHR){
+                setTimeout( function(){
+                    that.fetch();
+                }, 10000);
+               })
+            .fail( function( jqXHR, textStatus, errorThrown ) {
+            });
+    },
+
+    restart : function(){
+        alert('Unimplemented');
+    },
+
+    status_refresh : function(){
+        var url = '';
+        if( this.get('status') === 30 || this.get('status') === 20  ){
+            var url = '/cm/status/server/' + this.get('worker_id');
+        } else {
+            alert(this.str_status + " is inconsistent with a launch state");
+            return;
+        }
+        that = this;
+
+        var msg = { 'todo': 'add security features'}
+        $.post( url )
+            .done( function(data, textStatus, jqXHR){
+                setTimeout( function(){
+                    that.fetch();
+                }, 10000);
+               })
+            .fail( function( jqXHR, textStatus, errorThrown ) {
+            });
     },
 
     terminate : function(){

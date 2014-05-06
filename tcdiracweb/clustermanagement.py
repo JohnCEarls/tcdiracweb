@@ -112,7 +112,33 @@ def activate_server( worker_id ):
     return Response( json.dumps( msg ), mimetype="application/json",
             status= status )
 
+@cm.route('/stop/server/<worker_id>', methods=['POST'])
+def stop_server( worker_id ):
+    """
+    REQUEST IRRELEVANT
+    ==================
+    should add some security features, but this is fine for now
+    """
 
+    import tcdiracweb.controllers.worker as wkr
+    w = wkr.Worker( current_app, worker_id)
+    (msg, status) = w.POST( request, 'stop-server')
+    return Response( json.dumps( msg ), mimetype="application/json",
+            status= status )
+
+@cm.route('/status/server/<worker_id>', methods=['POST'])
+def status_server( worker_id ):
+    """
+    REQUEST IRRELEVANT
+    ==================
+    should add some security features, but this is fine for now
+    """
+
+    import tcdiracweb.controllers.worker as wkr
+    w = wkr.Worker( current_app, worker_id)
+    (msg, status) = w.POST( request, 'status-server')
+    return Response( json.dumps( msg ), mimetype="application/json",
+            status= status )
 
 @cm.route('/terminate/worker/<worker_id>', methods=['POST'])
 def terminate_worker( worker_id ):

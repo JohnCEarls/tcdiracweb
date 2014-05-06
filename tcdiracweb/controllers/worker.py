@@ -57,6 +57,10 @@ class Worker:
             return self._activate_worker( req_d )
         elif action == 'activate-server':
             return self._activate_server( req_d )
+        elif action == 'stop-server':
+            return self._stop_server( req_d )
+        elif action == 'status-server':
+            return self._status_server( req_d )
         elif action == 'terminate':
             return self._terminate_worker( req_d )
         else:
@@ -118,6 +122,63 @@ class Worker:
         the master starts the cluster
         """
         launcher_message = {'action': 'activate',
+                            'worker_id': self.worker_id,
+                }
+        launcher_config = sys_def_mdl.get_system_defaults(
+                setting_name = 'launcher_config', component='Master' )
+        conn = boto.sqs.connect_to_region('us-east-1')
+        lq = conn.create_queue( launcher_config['launcher_sqs_in'] )
+        mess = Message(body=json.dumps( launcher_message ))
+        lq.write( mess )
+        msg = {'status': 'complete',
+                'data': launcher_message }
+        status = 200
+        return ( msg, status )
+
+    def _activate_server( self, req_d ):
+        """
+        Generate message for launcher in queue to request that
+        the master starts the cluster
+        """
+        launcher_message = {'action': 'activate-server',
+                            'worker_id': self.worker_id,
+                }
+        launcher_config = sys_def_mdl.get_system_defaults(
+                setting_name = 'launcher_config', component='Master' )
+        conn = boto.sqs.connect_to_region('us-east-1')
+        lq = conn.create_queue( launcher_config['launcher_sqs_in'] )
+        mess = Message(body=json.dumps( launcher_message ))
+        lq.write( mess )
+        msg = {'status': 'complete',
+                'data': launcher_message }
+        status = 200
+        return ( msg, status )
+
+    def _stop_server( self, req_d ):
+        """
+        Generate message for launcher in queue to request that
+        the master starts the cluster
+        """
+        launcher_message = {'action': 'stop-server',
+                            'worker_id': self.worker_id,
+                }
+        launcher_config = sys_def_mdl.get_system_defaults(
+                setting_name = 'launcher_config', component='Master' )
+        conn = boto.sqs.connect_to_region('us-east-1')
+        lq = conn.create_queue( launcher_config['launcher_sqs_in'] )
+        mess = Message(body=json.dumps( launcher_message ))
+        lq.write( mess )
+        msg = {'status': 'complete',
+                'data': launcher_message }
+        status = 200
+        return ( msg, status )
+
+    def _status_server( self, req_d ):
+        """
+        Generate message for launcher in queue to request that
+        the master starts the cluster
+        """
+        launcher_message = {'action': 'status-server',
                             'worker_id': self.worker_id,
                 }
         launcher_config = sys_def_mdl.get_system_defaults(
