@@ -35,7 +35,7 @@ class Run:
         """
         Insert/update run
         """
-        self.app.logger.info("Run.POST()")
+        self.app.logger.info("PendingRun.POST()")
         req = self._req_to_dict( request )
         self.app.logger.debug( "request %r" % req )
         #make no distinction between insert and update
@@ -124,6 +124,7 @@ class PendingRun(Run):
         return (msg, status)
 
     def POST( self, request):
+        self.app.logger.info("Pending run %r" % request )
         req_d = self._req_to_dict( request )
         return self._activate_run( req_d )
 
@@ -133,7 +134,7 @@ class PendingRun(Run):
         the master starts the cluster
         """
         launcher_message = {'action': 'activate-run',
-                            'worker_id': self.run_id,
+                            'run_id': self.run_id,
                 }
         launcher_config = sys_def_mdl.get_system_defaults(
                 setting_name = 'launcher_config', component='Master' )

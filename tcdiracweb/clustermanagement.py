@@ -50,6 +50,7 @@ def get_pending_run( run_id=None ):
     a post requests that master change the run status from config to INIT
     """
     import tcdiracweb.controllers.run as rn
+    current_app.logger.info("get_pending_run")
     pr = rn.PendingRun(current_app, run_id )
     if request.method == 'GET':
         msg, status = pr.GET( request )
