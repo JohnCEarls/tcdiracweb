@@ -39,6 +39,7 @@ class Run:
         req = self._req_to_dict( request )
         self.app.logger.debug( "request %r" % req )
         #make no distinction between insert and update
+        #testing autopush
         self.app.logger.info("Update %s" % self.run_id )
         req.pop('run_id', None)#remove run_id from dict, using one in const.
         req.pop('date_created', None) #created is non-writeable
