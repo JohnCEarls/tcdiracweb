@@ -347,6 +347,9 @@ var WorkerView = Backbone.View.extend({
         return this;
     },
 
+    events : {
+        'click .log-refresh' : 'displayLog',
+    },
     render : function() {
         var st_status = this.model.str_status();
         this.className = "panel panel-"
@@ -382,8 +385,25 @@ var WorkerView = Backbone.View.extend({
         json_model['st_status'] = st_status;
         $(this.el).html( this.template( json_model ) );
         this.el.className = this.className;
+        this.displayLog();
         return this;
     },
+
+    displayLog : function(){
+        $logList = this.$el.find('.log-items');
+        $logList.empty();
+        $.get('/cm/log/worker/' + this.model.get('worker_id'))
+        .done( function( data ){
+            _.forEach(data.data, function( msg ){
+                $logList.append( msg );
+           })
+        })
+        .fail( function(){
+            $logList.append('<li class="list-group-item">NA</li>');
+        });
+
+
+    }
 });
 
 var DefaultWorkerButtonView = Backbone.View.extend({

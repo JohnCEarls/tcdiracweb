@@ -199,7 +199,23 @@ if( isEmptyObject(key_pairs) ){
         </li>
     </ul>
 </div>
+<div class="panel panel-default log-panel">
+<div class="panel-heading">
+    <h4 class="panel-title"><%=cluster_name%> Log
+<a href="#" class="log-refresh">
+<span class="glyphicon glyphicon-refresh"></span>
+</a></h4> 
+</div>
+<ul class="list-group log-items">
+</ul>
+</div>
 </script>
+<style>
+.log-items {
+    max-height : 333px;
+    overflow : scroll;
+}
+</style>
 <script type="text/template" id="template-defaultworker-dropdown">
 <li class="add-cluster-list-element">
     <a href="#" class="add-cluster">

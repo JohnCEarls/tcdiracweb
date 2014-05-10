@@ -174,6 +174,16 @@ def get_active_worker( worker_id=None ):
     return Response( json.dumps( msg ), mimetype="application/json",
             status= status )
 
+@cm.route('/log/worker/<worker_id>', methods=['GET'])
+def get_worker_log( worker_id ):
+    import tcdiracweb.controllers.worker as wkr
+    current_app.logger.info('get_active_worker')
+    worker = wkr.WorkerLog( current_app, worker_id )
+    (msg, status) =  worker.GET( request )
+    return Response( json.dumps( msg ), mimetype="application/json",
+            status= status )
+
+
 @cm.route('/managerun')
 @secure_page
 def manage_run():

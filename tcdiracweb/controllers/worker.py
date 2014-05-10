@@ -279,3 +279,35 @@ class Worker:
             except AttributeError as ae:
                 pass
         return req_d
+
+class WorkerLog:
+    """
+    Read only worker object
+    """
+    def __init__( self, app, worker_id=None):
+        self.app = app
+        self.worker_id = worker_id
+
+    def GET( self, request):
+        if self.worker_id is None:
+            msg = {
+                    'status' : 'error',
+                    'data' : [],
+                    'message': 'No worker id'
+                    }
+            status = 404
+        else:
+            result = wkr.get_log( worker_id=self.worker_id )
+            if result:
+                msg = {'status' : 'complete',
+                        'data' : [message for time, message in 
+                            result] 
+                        }
+                status = 200
+            else:
+                msg = {'status': 'error',
+                        'data' : {'worker_id' : self.worker_id},
+                        'message' : 'Worker logs not found'
+                        }
+                status = 404
+        return ( msg, status )
