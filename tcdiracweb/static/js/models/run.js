@@ -77,6 +77,18 @@ var Run = Backbone.Model.extend({
             alert( 'Invalid status for initialization(' + this.get('status') + ')' );
         }
     },
+    str_status : function(){
+        var status_map = {
+            '-10': 'CONFIG',
+            '0': 'INIT',
+            '10': 'ACTIVE',
+            '15': 'ACTIVE_ALL_SENT',
+            '20': 'COMPLETE',
+            '30': 'ABORT'
+        }
+        return status_map[ this.get('status').toString() ];
+    },
+
 });
 
 var RunCollection = Backbone.Collection.extend({

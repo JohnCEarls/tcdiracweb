@@ -14,8 +14,11 @@ var RunView = Backbone.View.extend({
     },
 
     render : function(){
-        var outputHtml = this.template( this.model.toJSON() );
-        $(this.el).html(outputHtml);
+        json_model = this.model.toJSON();
+        var st_status = this.model.str_status();
+        console.log( st_status )
+        json_model['st_status'] = st_status;
+        $(this.el).html( this.template( json_model ) );
         return this;
     },
 
