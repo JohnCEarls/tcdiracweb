@@ -20,7 +20,21 @@
         <li class="list-group-item"><strong>Status :</strong>  
             <%= st_status %>
             (<%= status  %>)</li>
-        <li class="list-group-item"><strong>Source Data</strong>
+        <li class="list-group-item">
+        <div class="panel panel-info">
+            <div class="panel-heading">
+              <h4 class="panel-title">
+                <a data-toggle="collapse" data-parent="#accordion-source-data" 
+
+                    href="#collapse-<%=run_id%>-source-data">
+                    <strong>Source Data</strong>
+
+                 </a>
+              </h4>
+            </div>
+        <div id="collapse-<%=run_id%>-source-data" 
+            class="panel-collapse collapse">
+          <div class="panel-body">
             <ul class="list-group">
                 <li class="list-group-item"><em>Bucket :</em> 
                         <%= source_data.bucket %></li>
@@ -35,26 +49,83 @@
                 <li class="list-group-item"><em>Synonym File :</em>
                         <%= source_data.synonym_file %></li>
             </ul>
+          </div>
+        </div>
+       </div>
+
         </li>
-        <li class="list-group-item"><strong>Destination Data</strong>
+        <li class="list-group-item">
+        <div class="panel panel-info">
+            <div class="panel-heading">
+              <h4 class="panel-title">
+                <a data-toggle="collapse" data-parent="#accordion-<%=run_id%>-dest-data" 
+
+                    href="#collapse-<%=run_id%>-dest-data">
+                        <strong>Destination Data</strong>
+                 </a>
+              </h4>
+            </div>
+        <div id="collapse-<%=run_id%>-dest-data" 
+            class="panel-collapse collapse">
+          <div class="panel-body">
+ 
             <ul class="list-group">
                 <li class="list-group-item"><em>Working Bucket :</em> 
                         <%= dest_data.working_bucket %></li>
+                 <li class="list-group-item"><em>Working Bucket Path:</em> 
+                        <%= dest_data.working_bucket_path %></li>
                 <li class="list-group-item"><em>Meta File :</em>
                         <%= dest_data.meta_file %></li>
                 <li class="list-group-item"><em>Data File(dataframe) :</em>
                         <%= dest_data.dataframe_file %></li>
             </ul>
+          </div>
+        </div>
+       </div>
+
+
         </li>
-        <li class="list-group-item"><strong>Network Config</strong>
+        <li class="list-group-item">
+<div class="panel panel-info">
+            <div class="panel-heading">
+              <h4 class="panel-title">
+                <a data-toggle="collapse" data-parent="#accordion-<%=run_id%>-net-config" 
+
+                    href="#collapse-<%=run_id%>-net-config">
+ 
+                <strong>Network Config</strong>
+                 </a>
+              </h4>
+            </div>
+        <div id="collapse-<%=run_id%>-net-config" 
+            class="panel-collapse collapse">
+          <div class="panel-body">
             <ul class="list-group">
                 <li class="list-group-item"><em>Network Table:</em> 
                         <%= network_config.network_table %></li>
                 <li class="list-group-item"><em>Network Source :</em>
                         <%= network_config.network_source %></li>
             </ul>
+          </div>
+        </div>
+       </div>
         </li>
-        <li class="list-group-item"><strong>Run Settings </strong>
+        <li class="list-group-item">
+<div class="panel panel-info">
+            <div class="panel-heading">
+              <h4 class="panel-title">
+                <a data-toggle="collapse" data-parent="#accordion-<%=run_id%>-run-settings" 
+
+                    href="#collapse-<%=run_id%>-run-settings">
+ 
+                <strong>Run Settings </strong>
+
+                 </a>
+              </h4>
+            </div>
+        <div id="collapse-<%=run_id%>-run-settings" 
+            class="panel-collapse collapse">
+          <div class="panel-body">
             <ul class="list-group">
                 <li class="list-group-item"><em>Run Metatable :</em> 
                         <%= run_settings.run_meta_table  %></li>
@@ -78,9 +149,27 @@
                         <%= run_settings.permutations %></li>
                 <li class="list-group-item"><em>Chunksize :</em>
                         <%= run_settings.chunksize %></li>
+
             </ul>
+          </div>
+        </div>
+       </div>
         </li>
-        <li class="list-group-item"><strong>Intercommunication Settings </strong>
+
+        <li class="list-group-item">
+        <div class="panel panel-info">
+            <div class="panel-heading">
+              <h4 class="panel-title">
+                <a data-toggle="collapse" data-parent="#accordion-<%=run_id%>-intercomm" 
+
+                    href="#collapse-<%=run_id%>-intercomm">
+            <strong>Intercommunication Settings </strong>
+                 </a>
+              </h4>
+            </div>
+        <div id="collapse-<%=run_id%>-intercomm" 
+            class="panel-collapse collapse">
+          <div class="panel-body">
             <ul class="list-group">
                 <li class="list-group-item"><em>SQS Data to GPU:</em> 
                         <%= intercomm_settings.sqs_from_data_to_gpu %></li>
@@ -95,19 +184,23 @@
                 <li class="list-group-item"><em>S3 GPU to Aggregator</em> 
                         <%= intercomm_settings.s3_from_gpu_to_agg %></li>
             </ul>
+          </div>
+        </div>
+       </div>
         </li>
         <li class="list-group-item"><strong>Aggregator Settings </strong>
         </li>
-        
-
     </ul> 
     <div class = "btn-group btn-group-left">
         <button type="button" class="btn btn-default btn-sm edit">
             <span class="glyphicon glyphicon-edit"></span> Edit
         </button>
+    <% if (status === -10 ) { %>
         <button type="button" class="btn btn-primary btn-sm initialize">
             Initialize 
         </button>
+    <% } %>
+
     </div>
     <div class = "btn-group btn-group-right" style="float:right">
         <button type="button" class="btn btn-default btn-sm delete">
@@ -216,15 +309,12 @@
     <input type="text" class="form-control" 
         name="dest_data__working_bucket" 
         value="<%= dest_data.working_bucket %>"/>
-    <label>Meta File </label>
-    <input type="text" class="form-control" 
-        name="dest_data__meta_file"   
-        value="<%= dest_data.meta_file %>" />
-    <label>Data File(dataframe)</label>
-    <input type="text" class="form-control" 
-        name="dest_data__dataframe_file"
-        value="<%= dest_data.dataframe_file %>" />
-  </div>
+
+    <label>Working Bucket Path</label>
+    <input type="text" class="form-control"
+        name="dest_data__working_bucket_path"
+        value="<%= dest_data.working_bucket_path %>"/>
+</div>
 </div>
 </div>
 <div class="panel panel-info">
@@ -322,7 +412,6 @@
 <div id="collapse-form-intercomm-settings" 
     class="panel-collapse collapse">
   <div class="panel-body">
-
     <label>SQS Data to GPU:</label> 
     <input type="text" class="form-control" 
         name="intercomm_settings__sqs_from_data_to_gpu" 

@@ -12,6 +12,7 @@ var Run = Backbone.Model.extend({
                 },
                 'dest_data':{
                     'working_bucket' : '',
+                    'working_bucket_path' : '',
                     'meta_file' : '',
                     'dataframe_file' : ''
                 },
