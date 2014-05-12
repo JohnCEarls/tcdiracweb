@@ -183,6 +183,8 @@ var RunFormView = Backbone.View.extend({
         }
         if( this.model.get('run_id') !== data.run_id)
         {
+            //run_id is immutable, changing it makes a copy
+            //of the run
             var new_model = new Run(data);
             new_model.save();
             this.collection.add(new_model);

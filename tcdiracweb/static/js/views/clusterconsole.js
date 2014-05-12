@@ -419,10 +419,11 @@ var DefaultWorkerButtonView = Backbone.View.extend({
         return this;
     },
     addDW : function( default_worker ){
-        console.log( default_worker );
 
-        var worker_view = new DefaultWorkerDropdownView( { model: default_worker } );
-        this.$el.find('#add-cluster-button').append( worker_view.render().el );
+        if( default_worker.get('available') ){//only show if available
+            var worker_view = new DefaultWorkerDropdownView( { model: default_worker } );
+            this.$el.find('#add-cluster-button').append( worker_view.render().el );
+        }
     }
 });
 

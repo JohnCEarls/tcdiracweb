@@ -348,7 +348,7 @@
       <h4 class="panel-title">
         <a data-toggle="collapse" data-parent="#accordion" 
             href="#collapse-form-run-settings">
-    <strong>Run Settings </strong>
+            <strong>Run Settings </strong>
         </a>
       </h4>
     </div>
@@ -363,10 +363,6 @@
     <input type="text" class="form-control" 
         name="run_settings__run_truth_table"
         value="<%= run_settings.run_truth_table  %>" />
-    <label>Run ID</label>
-    <input type="text" class="form-control" 
-        name="run_settings__run_id"
-        value="<%= run_settings.run_id  %>"/>
     <label>Server Initialization Queue</label>
     <input type="text" class="form-control" 
         name="run_settings__server_initialization_queue"
@@ -399,45 +395,6 @@
     <input type="text" class="form-control" 
         name="run_settings__chunksize"
         value="<%= run_settings.chunksize %>"/>
-</div>
-</div>
-</div>
-<div class="panel panel-info">
-    <div class="panel-heading">
-      <h4 class="panel-title">
-        <a data-toggle="collapse" data-parent="#accordion" 
-            href="#collapse-form-intercomm-settings">
-    <strong>Intercommunication Settings</strong>
-        </a>
-      </h4>
-    </div>
-<div id="collapse-form-intercomm-settings" 
-    class="panel-collapse collapse">
-  <div class="panel-body">
-    <label>SQS Data to GPU:</label> 
-    <input type="text" class="form-control" 
-        name="intercomm_settings__sqs_from_data_to_gpu" 
-        value="<%= intercomm_settings.sqs_from_data_to_gpu %>" />
-    <label>SQS GPU to Aggregator: </label>
-    <input type="text" class="form-control" 
-        name="intercomm_settings__sqs_from_gpu_to_agg"
-        value="<%= intercomm_settings.sqs_from_gpu_to_agg %>" />
-    <label>SQS Data to Aggregator: </label>
-    <input type="text" class="form-control" 
-        name="intercomm_settings__sqs_from_data_to_agg"
-        value="<%= intercomm_settings.sqs_from_data_to_agg %>" />
-    <label>SQS Data to Aggregator(Truth): </label>
-    <input type="text" class="form-control" 
-        name="intercomm_settings__sqs_from_data_to_agg_truth"
-        value="<%= intercomm_settings.sqs_from_data_to_agg_truth %>" />
-    <label>S3 Data to GPU </label>
-    <input type="text" class="form-control" 
-        name="intercomm_settings__s3_from_data_to_gpu"
-        value="<%= intercomm_settings.s3_from_data_to_gpu %>" />
-    <label>S3 GPU to Aggregator </label>
-    <input type="text" class="form-control" 
-        name="intercomm_settings__s3_from_gpu_to_agg"
-        value="<%= intercomm_settings.s3_from_gpu_to_agg %>"/>
 </div>
 </div>
 </div>

@@ -8,7 +8,8 @@ var DefaultWorker = Backbone.Model.extend({
                 'plugins':'base-tgr',
                 'force_spot_master':true,
                 'prefix' : '',
-                'iam_profile': ''
+                'iam_profile': '',
+                'available': false
                 },
     url : function( ){
         return this.urlRoot + '/' +

@@ -32,6 +32,8 @@
             <%= iam_profile %></li>
         <li class="list-group-item"><strong>Force Spot Master:</strong> 
             <%= force_spot_master %></li>
+        <li class="list-group-item"><strong>Available:</strong> 
+            <%= available %></li>
     </ul> 
     <div class = "btn-group btn-group-left">
         <button type="button" class="btn btn-default btn-sm edit">
@@ -93,6 +95,11 @@
     <input type="checkbox" name="force_spot_master" id="force_spot_master" 
         <% if(force_spot_master){ print('checked');} %> />
         Force Master to be spot (default)
+    </label>
+    <label for="available">
+    <input type="checkbox" name="available" id="available" 
+        <% if(available){ print('checked');} %> />
+        Worker config is available for launching clusters(default)
     </label>
     <button type="button" id="template-default-worker-button" 
         class="btn btn-default">

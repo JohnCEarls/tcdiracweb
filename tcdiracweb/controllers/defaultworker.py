@@ -103,7 +103,7 @@ class DefaultWorker:
         if 'aws_region' in req_d:
             self.aws_region = req_d['aws_region']
         valid_fields = ['instance_type', 'image_id', 'cluster_size', 'plugins', 
-                'force_spot_master', 'spot_bid', 'iam_profile', 'prefix']
+                'force_spot_master', 'spot_bid', 'iam_profile', 'prefix', 'available']
         #remove extraneous variables
         result_clean = dict([(key,value) for key, value in req_d.iteritems()
             if key in valid_fields])
@@ -115,6 +115,9 @@ class DefaultWorker:
         if 'force_spot_master' in result_clean:
             result_clean['force_spot_master'] = \
                 result_clean['force_spot_master'] in ['True','true','1', True] 
+        if 'available' in result_clean:
+            result_clean['available'] = \
+                result_clean['available'] in ['True','true','1', True] 
         return result_clean
 
 

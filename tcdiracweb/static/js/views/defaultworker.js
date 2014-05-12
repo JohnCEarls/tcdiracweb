@@ -155,6 +155,11 @@ var DefaultWorkerFormView = Backbone.View.extend({
         } else {
             data.force_spot_master = true;
         }
+        if( data.available === undefined){
+            data.available = false;
+        } else {
+            data.available = true;
+        }
         if( this.model.get('cluster_type') !== data.cluster_type ||
                     this.model.get('aws_region') !== data.aws_region)
         {
