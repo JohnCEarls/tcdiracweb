@@ -19,6 +19,15 @@ def console():
     """
     return render_template('clusterconsole.html', app=current_app)
 
+@cm.route('/console/messages', methods=['GET'])
+def cluster_manager():
+    import tcdiracweb.controllers.messages as m
+    console_messages = m.Console( current_app )
+    msg, status = console_messages.GET()
+    return Response( json.dumps( msg ), mimetype='application/json',
+                        status = status )
+
+
 @cm.route('/master', methods=['GET'])
 def get_master():
     """
