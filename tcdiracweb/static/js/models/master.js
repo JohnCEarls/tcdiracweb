@@ -5,6 +5,7 @@ var Master = Backbone.Model.extend({
                 'key_pairs':{},//ex: {'us-east-1':'ue1-key_name'}
                 'instance_id':'',
                 'comm_queue':'',
+                'branch': '',
                 'status':-10
     },
     url: '/cm/master',
