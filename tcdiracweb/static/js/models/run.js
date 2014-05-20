@@ -2,6 +2,7 @@ var Run = Backbone.Model.extend({
     //see masterdirac.models.run
     defaults : {'run_id': '',
                 'workers': [],
+                'master_name': '',
                 'source_data': {
                     'bucket':'',
                     'data_file':'',

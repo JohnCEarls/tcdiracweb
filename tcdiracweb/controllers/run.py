@@ -114,7 +114,7 @@ class PendingRun(Run):
 
     def GET( self, request):
         self.app.logger.info("PendingRun.GET(%r)" % self.run_id)
-        result = run.get_pending_run()
+        result = run.get_pending_ANRun()
         result = self._clean_response( result )
         if result:
             status = 200

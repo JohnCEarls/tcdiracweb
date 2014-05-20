@@ -468,3 +468,98 @@ var DefaultWorkerDropdownView = Backbone.View.extend({
        console.log("Add Cluster");
     },
 });
+
+var RunCollectionView   = Backbone.View.extend({
+    initialize : function(){
+        _.bindAll.apply(_, [this].concat(_.functions(this)))
+        this.collection.bind('add', this.addRun);
+        this.collection.fetch(
+            { add : true,
+              success : this.loadCompleteHandler,
+              error : this.loadErrorHandler
+            }
+        );
+
+    },
+    render : function(){
+        return this;
+    },
+
+    addRun : function( run ){
+        this.removeEmpty();
+        var run_view = new RunRow( { model: run } );
+        this.$el.append( run_view.render().el );
+    },
+
+    loadCompleteHandler : function( collection, response, options){
+        console.log("loadCompleteHandler");
+    },
+
+    loadErrorHandler : function( collection, response, options){
+        //what the server actually returned
+        
+        var msg = response.responseJSON;
+        if( response && response.responseJSON ){
+            this.showEmpty( msg );
+        }
+    },
+
+    showEmpty : function( message ){
+        this.removeEmpty();//lazy
+        //var t = _.template( $('#template-run-empty').html() );
+        //$('#large-container').append( t( message ) );
+    },
+
+    removeEmpty : function(){
+        //$('#large-container').find('#run-empty').remove();
+    },
+
+});
+
+var RunView = Backbone.View.extend({
+    type : "RunView",
+    template : _.template( $('#template-run').html() ),
+    tagName:"div",
+    className : "panel panel-primary",
+    initialize : function(){
+        _.bindAll.apply(_, [this].concat(_.functions(this)));
+        this.model.on('change', this.render, this);
+        this.model.on('delete', this.clear)
+    },
+
+    render : function(){
+        json_model = this.model.toJSON();
+        var st_status = this.model.str_status();
+        console.log( st_status )
+        json_model['st_status'] = st_status;
+        $(this.el).html( this.template( json_model ) );
+        return this;
+    },
+
+    events : {
+    },
+}); 
+
+var RunRow = Backbone.View.extend({
+    type : "RunRow",
+    tagName : "tr",
+    className : "default",
+    id : "runrow",
+    template : _.template( $('#template-cluster-row-run').html() ),
+    initialize : function(){
+        _.bindAll.apply(_, [this].concat(_.functions(this)));
+        this.model.on('change', this.render, this);
+        app.master_model.on('change', this.render, this);
+        this.model.fetch();
+        return this;
+    },
+
+    render : function(){
+        json_model = this.model.toJSON();
+        json_model['st_status'] = this.model.str_status();
+        $(this.el).html( this.template( json_model ) );
+        return this;
+   },
+});
+
+

@@ -3,6 +3,7 @@
 {% block headjs %}
 {{ super() }}
 {% include 'jstemplates/clusterconsole.html' %}
+{% include 'jstemplates/run.html' %}
 <script type="text/javascript" src="{{ 
     url_for('static', filename='js/views/clusterconsole.js') }}"></script>
 <script type="text/javascript" src="{{ 
@@ -11,6 +12,9 @@
     url_for('static', filename='js/models/master.js') }}"></script>
 <script type="text/javascript" src="{{ 
     url_for('static', filename='js/models/worker.js') }}"></script>
+<script type="text/javascript" src="{{ 
+    url_for('static', filename='js/models/run.js') }}"></script>
+
 <script type="text/javascript">
     AWS.config.credentials = new AWS.WebIdentityCredentials({
         RoleArn: "{{ app.config.get('AWS_ROLE_ARN_GOOGLE') }}"
@@ -92,6 +96,54 @@
                     <th>
                     </th>
                     <th>
+                        Run ID 
+                    </th>
+                    <th>
+                        Master 
+                    </th>
+                    <th>
+                        Description 
+                    </th>
+                    <th>
+                        Status
+                    </th>
+                    <th>
+                    </th>
+                </tr>
+            </thead>
+            <tbody id="active-run-table">
+            </tbody> 
+        </table>
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>
+                    </th>
+                    <th>
+                        Run ID 
+                    </th>
+                    <th>
+                        Master 
+                    </th>
+                    <th>
+                        Description 
+                    </th>
+                    <th>
+                        Status
+                    </th>
+                    <th>
+                    </th>
+                </tr>
+            </thead>
+            <tbody id="pending-run-table">
+            </tbody> 
+        </table>
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>
+                    </th>
+                    <th>
                         Cluster Name
                     </th>
                     <th>
@@ -119,9 +171,20 @@
         $('#master-table').append(master_row.render().el);
         app.master_model = master_model;
         app.worker_collection =  new WorkerCollection();
+        app.active_run_collection = new ActiveRunCollection();
+        app.pending_run_collection = new PendingRunCollection();
         var wcv = new WorkerCollectionView( { collection:app.worker_collection });
         var dfwbv = new DefaultWorkerButtonView({ collection : new DefaultWorkerCollection(),
                 master_model : master_model 
+            });
+        var prc = new RunCollectionView({
+                'el': "#pending-run-table",
+                'collection': app.pending_run_collection
+            });
+        var arc = new RunCollectionView({
+                'el': "#active-run-table",
+                'collection': app.active_run_collection
+
             });
     });
 </script>
