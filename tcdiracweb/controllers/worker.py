@@ -19,8 +19,14 @@ class Worker:
     def GET( self, request):
         if self.worker_id is None:
             #return active workers
-            ls = sys_def_mdl.get_system_defaults('local_settings', 'Master')
-            workers = wkr.get_active_workers(ls['branch'])
+            if request.args.get('branch'):
+                branch = None
+            else:
+                ls = sys_def_mdl.get_system_defaults('local_settings', 'Master')
+                branch = ls['branch']
+            self.app.logger.info("GETting workers for the %s branch" % (
+                branch ))
+            workers = wkr.get_active_workers(branch)
             workers = [json_prep( worker ) for worker in workers]
             if workers:
                 msg = {

@@ -181,6 +181,11 @@ def get_active_worker( worker_id=None ):
     """
     import tcdiracweb.controllers.worker as wkr
     current_app.logger.info('get_active_worker')
+    import masterdirac.models.systemdefaults as sys_def_mdl
+    current_app.logger.info('get_active_worker')
+    ls = sys_def_mdl.get_system_defaults('local_settings', 'Master')
+    current_app.logger.info("getting workers for the %s branch" % (
+                ls['branch'] ))
     worker = wkr.Worker( current_app, worker_id )
     (msg, status) =  worker.GET( request )
     return Response( json.dumps( msg ), mimetype="application/json",
@@ -189,7 +194,6 @@ def get_active_worker( worker_id=None ):
 @cm.route('/log/worker/<worker_id>', methods=['GET'])
 def get_worker_log( worker_id ):
     import tcdiracweb.controllers.worker as wkr
-    current_app.logger.info('get_active_worker')
     worker = wkr.WorkerLog( current_app, worker_id )
     (msg, status) =  worker.GET( request )
     return Response( json.dumps( msg ), mimetype="application/json",
