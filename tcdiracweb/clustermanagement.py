@@ -36,7 +36,10 @@ def get_master():
     """
     current_app.logger.info('get_master')
     import masterdirac.models.master as mstr
-    master = mstr.get_active_master()
+    import masterdirac.models.systemdefaults as sys_def
+    local_settings = sys_def.get_system_defaults('local_settings',
+            'master')
+    master = mstr.get_active_master(local_settings['branch'] )
     if master is not None:
         msg = {'status' : 'complete',
                'data' : json_prep(master) }
