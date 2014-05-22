@@ -38,7 +38,7 @@ def get_master():
     import masterdirac.models.master as mstr
     import masterdirac.models.systemdefaults as sys_def
     local_settings = sys_def.get_system_defaults('local_settings',
-            'master')
+            'Master')
     master = mstr.get_active_master(local_settings['branch'] )
     if master is not None:
         msg = {'status' : 'complete',

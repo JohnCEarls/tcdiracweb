@@ -49,18 +49,33 @@ var MasterRow = Backbone.View.extend({
     },
 
     render : function() {
-        if( this.model.get('status') === 0 ){
-            this.className = "warning";
-        } else if ( this.model.get('status') === 10 ){
-            this.className = "success";
+        if(this.model.get('master_name') == 'None'){
+            this.showEmpty();
         } else {
-            this.className = "danger";
+            if( this.model.get('status') === 0 ){
+                this.className = "warning";
+            } else if ( this.model.get('status') === 10 ){
+                this.className = "success";
+            } else {
+                this.className = "danger";
+            }
+            json_model = this.model.toJSON();
+            json_model['st_status'] = this.model.str_status();
+            $(this.el).html( this.template( json_model ) );
+            this.el.className = this.className;
+            this.addWorkerButtons();
         }
-        json_model = this.model.toJSON();
-        json_model['st_status'] = this.model.str_status();
-        $(this.el).html( this.template( json_model ) );
-        this.el.className = this.className;
         return this;
+    },
+
+    addWorkerButtons : function(){
+        that = this;
+        console.log('adding worker buttons')
+        var dfwbv = new DefaultWorkerButtonView(
+            { collection : new DefaultWorkerCollection(),
+               master_model : that.model,
+               el : that.$el.find('#master-action-menu'),
+        });
     },
 
     loadSideView : function(){
@@ -87,6 +102,16 @@ var MasterRow = Backbone.View.extend({
 
     refresh : function(){
         this.model.fetch();
+    },
+
+    showEmpty : function( message ){
+        this.removeEmpty();//lazy
+        var t = _.template( $('#template-master-empty').html() );
+        this.$el.append( t( {message: 'No active master server'} ) );
+    },
+
+    removeEmpty : function(){
+        this.$el.find('#empty-row').remove();
     },
 
 });
@@ -408,7 +433,6 @@ var WorkerView = Backbone.View.extend({
 
 var DefaultWorkerButtonView = Backbone.View.extend({
     type : "DefaultWorkerButtonView",
-    el :"#defaultworker-button",
     initialize : function(){
         _.bindAll.apply(_, [this].concat(_.functions(this)));
         this.collection.bind('add', this.addDW);
@@ -422,7 +446,7 @@ var DefaultWorkerButtonView = Backbone.View.extend({
 
         if( default_worker.get('available') ){//only show if available
             var worker_view = new DefaultWorkerDropdownView( { model: default_worker } );
-            this.$el.find('#add-cluster-button').append( worker_view.render().el );
+            this.$el.append( worker_view.render().el );
         }
     }
 });
@@ -506,12 +530,12 @@ var RunCollectionView   = Backbone.View.extend({
 
     showEmpty : function( message ){
         this.removeEmpty();//lazy
-        //var t = _.template( $('#template-run-empty').html() );
-        //$('#large-container').append( t( message ) );
+        var t = _.template( $('#template-run-empty').html() );
+        this.$el.append( t( message ) );
     },
 
     removeEmpty : function(){
-        //$('#large-container').find('#run-empty').remove();
+        this.$el.find('#empty-row').remove();
     },
 
 });
@@ -536,8 +560,6 @@ var RunView = Backbone.View.extend({
         return this;
     },
 
-    events : {
-    },
 }); 
 
 var RunRow = Backbone.View.extend({
@@ -554,12 +576,171 @@ var RunRow = Backbone.View.extend({
         return this;
     },
 
+    events : function(){
+        var events = {
+        'click .run-info' : 'loadSideView',
+        'click .refresh' : 'refresh',
+        };
+        switch( this.model.get('status') )
+        {
+            case -10: //configured
+                events['click .initialize'] = 'initializeRun';
+                events['click .abort'] = 'abortRun';
+                break;
+            case 0: //initialized
+                events['click .abort'] = 'abortRun';
+                break;
+            case 10: //active
+                events['click .abort'] = 'abortRun';
+                break;
+            case 15: //active all sent
+               events['click .abort'] = 'abortRun';
+                break;
+            case 20: //complete
+                break;
+            case 30: //abort
+                break;
+            default:
+                console.log('Error: unmatched status');
+                break;
+        }
+        if( this.model.get('status') !== -10 && 
+           this.model.get('master_name') !== app.master_model.get('master_name') ){
+            events['click .reassign'] = 'reassign';
+        }
+        return events;
+    },
+
+    initializeRun : function(){
+        this.model.initilizeRun();
+    },
+
+    abortRun : function(){
+        this.model.set('status', 30);
+        this.model.save();
+        console.log('abort');
+    },
+
+    reassign : function(){
+        this.model.set('master_name', app.master_model.get('master_name'));
+        console.log('reassign');
+    },
+
     render : function(){
+        switch( this.model.get('status') )
+        {
+            case -10: //configured
+                this.className = "default";
+                break;
+            case 0: //initialized
+                this.className = "warning";
+                break;
+            case 10: //active
+                this.className = "success";
+                break;
+            case 15: //active all sent
+                this.className = "success";
+                break;
+            case 20: //complete
+                this.className = "info"
+                break;
+            case 30: //abort
+                this.className = "danger"
+                break;
+            default:
+                this.className = "danger"
+                console.log('Error: unmatched status');
+                break;
+        }
+
+        if( this.model.get('status') !== -10 && 
+           this.model.get('master_name') !== app.master_model.get('master_name') ){
+            //this has wrong master
+            this.className = "warning"
+        }
         json_model = this.model.toJSON();
         json_model['st_status'] = this.model.str_status();
         $(this.el).html( this.template( json_model ) );
+        this.manageControls();
         return this;
-   },
+    },
+   
+    getControl : function( cls, glyph, txt ){
+        return '<li><a href="#" class="'+cls+'">' +
+               '<span class="glyphicon glyphicon-'+glyph+'"></span>' +
+               txt +'</a></li>';
+    },
+
+    manageControls : function () {
+        //add functions to the button, depending on current status
+        var dm = this.$el.find('.dropdown-menu');
+        var status = this.model.get('status');
+        that = this;
+        switch( status )
+        {
+            case -10: //configured
+                dm.append(that.getControl("initialize","heart",'Initialize'));
+
+                dm.append(that.getControl("abort","remove","Abort"));
+                this.className = "default";
+                break;
+            case 0: //initialized
+                this.className = "warning";
+                dm.append(that.getControl("abort","remove","Abort"));
+                break;
+            case 10: //active
+                this.className = "success";
+                dm.append(that.getControl("abort","remove","Abort"));
+                break;
+            case 15: //active all sent
+                this.className = "success";
+                dm.append(that.getControl("abort","remove","Abort"));
+                break;
+            case 20: //complete
+                this.className = "info"
+                break;
+            case 30: //abort
+                this.className = "danger"
+                break;
+            default:
+                this.className = "danger"
+                console.log('Error: unmatched status');
+                break;
+        }
+        if( this.model.get('status') !== -10 && 
+           this.model.get('master_name') !== app.master_model.get('master_name') ){
+            //this has wrong master
+            dm.append('<li class="divider"></li>');
+            dm.append(that.getControl("reassign","wrench","Reassign master"));
+        }
+    },
+
+   loadSideView : function(){
+        var displayed = false;
+        if( app.sidePanel !== undefined ){
+            if(app.sidePanel.model &&
+                app.sidePanel.type === "RunView" &&
+                app.sidePanel.model.get("run_id") ===
+                this.model.get("run_id")){
+                displayed = true;
+            }
+            try{
+                app.sidePanel.remove();
+            } catch(err){
+                //not there, so just continue
+            }
+            app.sidePanel = {};
+        }
+        if( ! displayed){
+            app.sidePanel = new RunView( {model: this.model} );
+            $('#small-container').append( app.sidePanel.render().el );
+        }
+    },
+
+    refresh : function(){
+        this.model.fetch();
+    },
+
 });
 
 

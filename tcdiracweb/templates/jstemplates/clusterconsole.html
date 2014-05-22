@@ -72,12 +72,17 @@ if( isEmptyObject(key_pairs) ){
 <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
     Action <span class="caret"></span>
   </button>
-  <ul class="dropdown-menu" role="menu">
+  <ul class="dropdown-menu" role="menu" id="master-action-menu">
     <li><a href="#" class="refresh"><span class="glyphicon glyphicon-refresh"></span> Refresh</a></li>
     <li class="divider"></li>
   </ul>
 </div>
 </td>
+</script>
+<script type="text/template" id="template-master-empty">
+    <td colspan="10" id="empty-row">
+        <%= message %>
+    </td>
 </script>
 
 <script type="text/template" id="template-cluster-row-worker">
@@ -258,3 +263,224 @@ if( isEmptyObject(key_pairs) ){
 </td>
 
 </script>
+<script type="text/template" id="template-run-empty">
+<tr id="empty-row">
+    <td colspan="10">
+        <%= message %>
+    </td>
+</tr>
+</script>
+
+
+
+<script type="text/template" id="template-run">
+<div class="panel-heading">
+  <h4 class="panel-title">
+      <strong><%= run_id %></strong>
+  </h4>
+</div>
+  <div class="panel-body">
+    <ul class="list-group">
+        <li class="list-group-item"><strong>Run ID :</strong> 
+            <%= run_id %></li>
+        <li class="list-group-item"><strong>Description :</strong> 
+            <%= description %></li>
+        <li class="list-group-item"><strong>Workers :</strong>  
+            <%= workers.join(', ')  %></li>
+        <li class="list-group-item"><strong>Status :</strong>  
+            <%= st_status %>
+            (<%= status  %>)</li>
+        <li class="list-group-item">
+        <div class="panel panel-info">
+            <div class="panel-heading">
+              <h4 class="panel-title">
+                <a data-toggle="collapse" data-parent="#accordion-source-data" 
+
+                    href="#collapse-<%=run_id%>-source-data">
+                    <strong>Source Data</strong>
+
+                 </a>
+              </h4>
+            </div>
+        <div id="collapse-<%=run_id%>-source-data" 
+            class="panel-collapse collapse">
+          <div class="panel-body">
+            <ul class="list-group">
+                <li class="list-group-item"><em>Bucket :</em> 
+                        <%= source_data.bucket %></li>
+                <li class="list-group-item"><em>Data File :</em>
+                        <%= source_data.data_file %></li>
+                <li class="list-group-item"><em>Metadata File :</em>
+                        <%= source_data.meta_file %></li>
+                <li class="list-group-item"><em>Annotations File :</em>
+                        <%= source_data.annotations_file %></li>
+                <li class="list-group-item"><em>Agilent File :</em>  
+                        <%= source_data.agilent_file %></li>
+                <li class="list-group-item"><em>Synonym File :</em>
+                        <%= source_data.synonym_file %></li>
+            </ul>
+          </div>
+        </div>
+       </div>
+
+        </li>
+        <li class="list-group-item">
+        <div class="panel panel-info">
+            <div class="panel-heading">
+              <h4 class="panel-title">
+                <a data-toggle="collapse" data-parent="#accordion-<%=run_id%>-dest-data" 
+
+                    href="#collapse-<%=run_id%>-dest-data">
+                        <strong>Destination Data</strong>
+                 </a>
+              </h4>
+            </div>
+        <div id="collapse-<%=run_id%>-dest-data" 
+            class="panel-collapse collapse">
+          <div class="panel-body">
+ 
+            <ul class="list-group">
+                <li class="list-group-item"><em>Working Bucket :</em> 
+                        <%= dest_data.working_bucket %></li>
+                 <li class="list-group-item"><em>Working Bucket Path:</em> 
+                        <%= dest_data.working_bucket_path %></li>
+                <li class="list-group-item"><em>Meta File :</em>
+                        <%= dest_data.meta_file %></li>
+                <li class="list-group-item"><em>Data File(dataframe) :</em>
+                        <%= dest_data.dataframe_file %></li>
+            </ul>
+          </div>
+        </div>
+       </div>
+
+
+        </li>
+        <li class="list-group-item">
+<div class="panel panel-info">
+            <div class="panel-heading">
+              <h4 class="panel-title">
+                <a data-toggle="collapse" data-parent="#accordion-<%=run_id%>-net-config" 
+
+                    href="#collapse-<%=run_id%>-net-config">
+ 
+                <strong>Network Config</strong>
+                 </a>
+              </h4>
+            </div>
+        <div id="collapse-<%=run_id%>-net-config" 
+            class="panel-collapse collapse">
+          <div class="panel-body">
+            <ul class="list-group">
+                <li class="list-group-item"><em>Network Table:</em> 
+                        <%= network_config.network_table %></li>
+                <li class="list-group-item"><em>Network Source :</em>
+                        <%= network_config.network_source %></li>
+            </ul>
+          </div>
+        </div>
+       </div>
+        </li>
+        <li class="list-group-item">
+<div class="panel panel-info">
+            <div class="panel-heading">
+              <h4 class="panel-title">
+                <a data-toggle="collapse" data-parent="#accordion-<%=run_id%>-run-settings" 
+
+                    href="#collapse-<%=run_id%>-run-settings">
+ 
+                <strong>Run Settings </strong>
+
+                 </a>
+              </h4>
+            </div>
+        <div id="collapse-<%=run_id%>-run-settings" 
+            class="panel-collapse collapse">
+          <div class="panel-body">
+            <ul class="list-group">
+                <li class="list-group-item"><em>Run Metatable :</em> 
+                        <%= run_settings.run_meta_table  %></li>
+                <li class="list-group-item"><em>Run Truth Table :</em> 
+                        <%= run_settings.run_truth_table  %></li>
+                <li class="list-group-item"><em>Run ID :</em> 
+                        <%= run_settings.run_id  %></li>
+                <li class="list-group-item"><em>Server Initialization Queue :</em> 
+                        <%= run_settings.server_initialization_queue  %></li>
+                <li class="list-group-item"><em>K :</em> 
+                        <%= run_settings.k %></li>
+                <li class="list-group-item"><em>Sample Block Size :</em> 
+                        <%= run_settings.sample_block_size %></li>
+                <li class="list-group-item"><em>Pairs Block Size :</em> 
+                        <%= run_settings.pairs_block_size %></li>
+                <li class="list-group-item"><em>Nets Block Size :</em> 
+                        <%= run_settings.nets_block_size %></li>
+                <li class="list-group-item"><em>Heartbeat Interval :</em> 
+                        <%= run_settings.heartbeat_interval %></li>
+                <li class="list-group-item"><em>Permutations :</em>
+                        <%= run_settings.permutations %></li>
+                <li class="list-group-item"><em>Chunksize :</em>
+                        <%= run_settings.chunksize %></li>
+
+            </ul>
+          </div>
+        </div>
+       </div>
+        </li>
+
+        <li class="list-group-item">
+        <div class="panel panel-info">
+            <div class="panel-heading">
+              <h4 class="panel-title">
+                <a data-toggle="collapse" data-parent="#accordion-<%=run_id%>-intercomm" 
+
+                    href="#collapse-<%=run_id%>-intercomm">
+            <strong>Intercommunication Settings </strong>
+                 </a>
+              </h4>
+            </div>
+        <div id="collapse-<%=run_id%>-intercomm" 
+            class="panel-collapse collapse">
+          <div class="panel-body">
+            <ul class="list-group">
+                <li class="list-group-item"><em>SQS Data to GPU:</em> 
+                        <%= intercomm_settings.sqs_from_data_to_gpu %></li>
+                <li class="list-group-item"><em>SQS GPU to Aggregator:</em> 
+                        <%= intercomm_settings.sqs_from_gpu_to_agg %></li>
+                <li class="list-group-item"><em>SQS Data to Aggregator:</em> 
+                        <%= intercomm_settings.sqs_from_data_to_agg %></li>
+                <li class="list-group-item"><em>SQS Data to Aggregator(Truth):</em> 
+                        <%= intercomm_settings.sqs_from_data_to_agg_truth %></li>
+                <li class="list-group-item"><em>S3 Data to GPU</em> 
+                        <%= intercomm_settings.s3_from_data_to_gpu %></li>
+                <li class="list-group-item"><em>S3 GPU to Aggregator</em> 
+                        <%= intercomm_settings.s3_from_gpu_to_agg %></li>
+            </ul>
+          </div>
+        </div>
+       </div>
+        </li>
+        <li class="list-group-item"><strong>Aggregator Settings </strong>
+        </li>
+    </ul> 
+    <!--
+    <div class = "btn-group btn-group-left">
+        <button type="button" class="btn btn-default btn-sm edit">
+            <span class="glyphicon glyphicon-edit"></span> Edit
+        </button>
+    <% if (status === -10 ) { %>
+        <button type="button" class="btn btn-primary btn-sm initialize">
+            Initialize 
+        </button>
+    <% } %>
+
+    </div>
+    <% if (run_id !== 'default') { %>
+    <div class = "btn-group btn-group-right" style="float:right">
+        <button type="button" class="btn btn-default btn-sm delete">
+            <span class="glyphicon glyphicon-remove"></span> Delete
+        </button>
+    </div>
+    <% } %>
+    -->
+  </div>
+</script>
+

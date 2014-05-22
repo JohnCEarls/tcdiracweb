@@ -3,7 +3,6 @@
 {% block headjs %}
 {{ super() }}
 {% include 'jstemplates/clusterconsole.html' %}
-{% include 'jstemplates/run.html' %}
 <script type="text/javascript" src="{{ 
     url_for('static', filename='js/views/clusterconsole.js') }}"></script>
 <script type="text/javascript" src="{{ 
@@ -51,16 +50,6 @@
 <div class="row">
     <div class="col-md-12 page-header">
         <h1>Console</h1>
-    </div>
-</div>
-<div class="row">
-    <div class="btn-group" id="defaultworker-button">
-        <button type="button" class="btn btn-default dropdown-toggle" 
-            data-toggle="dropdown">
-            Add Worker Cluster <span class="caret"></span>
-         </button>
-         <ul class="dropdown-menu" id="add-cluster-button">
-         </ul>
     </div>
 </div>
 <div class="row">
@@ -174,9 +163,6 @@
         app.active_run_collection = new ActiveRunCollection();
         app.pending_run_collection = new PendingRunCollection();
         var wcv = new WorkerCollectionView( { collection:app.worker_collection });
-        var dfwbv = new DefaultWorkerButtonView({ collection : new DefaultWorkerCollection(),
-                master_model : master_model 
-            });
         var prc = new RunCollectionView({
                 'el': "#pending-run-table",
                 'collection': app.pending_run_collection

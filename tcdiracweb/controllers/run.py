@@ -35,7 +35,7 @@ class Run:
         """
         Insert/update run
         """
-        self.app.logger.info("PendingRun.POST()")
+        self.app.logger.info("Run.POST()")
         req = self._req_to_dict( request )
         self.app.logger.debug( "request %r" % req )
         #make no distinction between insert and update
@@ -43,7 +43,10 @@ class Run:
         self.app.logger.info("Update %s" % self.run_id )
         req.pop('run_id', None)#remove run_id from dict, using one in const.
         req.pop('date_created', None) #created is non-writeable
-        req.pop('status') #status unwriteable from web
+        if req['status'] not in [0, 30]:
+            #only initialize or abort
+            req.pop('status') #status unwriteable from web
+
         result = run.insert_ANRun( self.run_id, **req )
         result = self._clean_response( result )
         msg = {'status': 'complete',
@@ -117,11 +120,15 @@ class PendingRun(Run):
         result = run.get_pending_ANRun()
         result = self._clean_response( result )
         if result:
+            msg = {'status':'complete',
+                'data': result }
             status = 200
         else:
+            msg = {
+                'status' : 'error',
+                'data' : result,
+                'message' : 'No Pending Runs' }
             status = 404
-        msg = {'status':'complete',
-                'data': result }
         return (msg, status)
 
     def POST( self, request):
