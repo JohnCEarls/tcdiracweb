@@ -39,7 +39,7 @@ def get_master():
     import masterdirac.models.systemdefaults as sys_def
     local_settings = sys_def.get_system_defaults('local_settings',
             'Master')
-    master = mstr.get_active_master(local_settings['branch'] )
+    master = mstr.get_active_master( local_settings['branch'] )
     if master is not None:
         msg = {'status' : 'complete',
                'data' : json_prep(master) }
@@ -204,7 +204,7 @@ def manage_run():
     return render_template('run.html', app=current_app)
 
 @cm.route('/run', methods=['GET'])
-@cm.route('/run/<run_id>', methods=['GET', 'POST','PUT', 'DELETE'])
+@cm.route('/run/<run_id>', methods=['GET', 'POST','PUT', 'DELETE','PATCH'])
 @secure_page
 def run( run_id=None ):
     """
@@ -216,6 +216,9 @@ def run( run_id=None ):
     run = Run( current_app, run_id)
     if request.method in ['POST','PUT']:
         msg, status  = run.POST( request )
+    elif request.method == 'PATCH':
+        msg, status  = run.PATCH( request )
+ 
     elif request.method == 'DELETE':
         msg, status = run.DELETE()
     else:
@@ -256,12 +259,9 @@ def worker_default( cluster_type=None, aws_region=None ):
 
 @cm.route('/config/<worker_id>')
 def config(worker_id):
-    import masterdirac.models.worker as wrkr
-
-    worker_model = wrkr.get_ANWorker( worker_id = worker_id )
-    if worker_model:
-        config_settings = worker_model['starcluster_config']
-        """= {
+    """=
+        example config 
+        {
         'cluster_name':'dummy-cluster',
         'aws_region':'us-east-1',
         'key_name': 'somekey',
@@ -274,9 +274,29 @@ def config(worker_id):
         'spot_bid':2.00,
         'plugins':'p1,p2,p3'
     }"""
-    return render_template('sc-main.cfg', **config_settings) +\
-        render_template('sc-plugins.cfg') + \
-        render_template('sc-security-group.cfg')
+    import masterdirac.models.worker as wrkr
+
+    import masterdirac.models.systemdefaults as sys_def
+    local_settings = sys_def.get_system_defaults('local_settings',
+            'Master') 
+    worker_model = wrkr.get_ANWorker( worker_id = worker_id )
+    if worker_model:
+        config_settings = worker_model['starcluster_config']
+        if local_settings['branch']=='develop':
+            def devify( pl ):
+                t = ['dev-tgr']
+                for plugin in pl.split(','):
+                    if plugin.strip() == 'gpu-bootstrap':
+                        t.append('gpu-dev-bootstrap')
+                    elif plugin.strip() == 'data-bootstrap':
+                        t.append('data-dev-bootstrap')
+                    else:
+                        t.append(plugin)
+                return ', '.join(t)
+            config_settings['plugins'] = devify( config_settings['plugins'] )
+    return Response( render_template('sc-main.cfg', **config_settings) +
+        render_template('sc-plugins.cfg') + 
+        render_template('sc-security-group.cfg'), mimetype="text/plain" )
 
 @cm.route('/scconfig/<master_name>/<cluster_name>')
 def scget_config(master_name, cluster_name):

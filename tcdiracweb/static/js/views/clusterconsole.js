@@ -354,7 +354,9 @@ var WorkerRow = Backbone.View.extend({
 
     terminate : function(){
         console.log('terminate in view');
-        this.model.terminate();
+        if( confirm( "Terminate " + this.model.get('cluster_name') + "?" )){
+            this.model.terminate();
+        }
     },
 
 });
@@ -612,7 +614,7 @@ var RunRow = Backbone.View.extend({
     },
 
     initializeRun : function(){
-        this.model.initilizeRun();
+        this.model.initializeRun();
     },
 
     abortRun : function(){
@@ -623,6 +625,9 @@ var RunRow = Backbone.View.extend({
 
     reassign : function(){
         this.model.set('master_name', app.master_model.get('master_name'));
+        this.model.save({master_name:  app.master_model.get('master_name')},
+                        {patch:true});
+
         console.log('reassign');
     },
 
@@ -732,6 +737,7 @@ var RunRow = Backbone.View.extend({
             app.sidePanel = {};
         }
         if( ! displayed){
+            this.model.fetch();
             app.sidePanel = new RunView( {model: this.model} );
             $('#small-container').append( app.sidePanel.render().el );
         }

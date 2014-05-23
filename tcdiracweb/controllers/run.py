@@ -40,18 +40,53 @@ class Run:
         self.app.logger.debug( "request %r" % req )
         #make no distinction between insert and update
         #testing autopush
-        self.app.logger.info("Update %s" % self.run_id )
-        req.pop('run_id', None)#remove run_id from dict, using one in const.
+        req.pop('run_id', None)#remove run_id from dict, using self.run_id
         req.pop('date_created', None) #created is non-writeable
         if req['status'] not in [0, 30]:
             #only initialize or abort
             req.pop('status') #status unwriteable from web
-
-        result = run.insert_ANRun( self.run_id, **req )
+        exists = run.get_ANRun( self.run_id )
+        if exists:
+            self.app.logger.info("Update %s" % self.run_id )
+            result = run.update_ANRun( self.run_id, **req )
+        else:
+            #all new runs start in the config status
+            self.app.logger.info("Insert %s" % self.run_id )
+            req['status'] = run.CONFIG
+            result = run.insert_ANRun( self.run_id, **req )
         result = self._clean_response( result )
         msg = {'status': 'complete',
                 'data': result }
         return (msg, 200)
+
+    def PATCH( self, request):
+        """
+        Insert/update run
+        """
+        self.app.logger.info("Run.PATHC()")
+        req = self._req_to_dict( request )
+        self.app.logger.debug( "request %r" % req )
+        #make no distinction between insert and update
+        #testing autopush
+        req.pop('run_id', None)#remove run_id from dict, using self.run_id
+        req.pop('date_created', None) #created is non-writeable
+        if 'status' in req and req['status'] not in [0, 30]:
+            #only initialize or abort
+            req.pop('status') #status unwriteable from web
+        exists = run.get_ANRun( self.run_id )
+        if exists:
+            self.app.logger.info("Update %s" % self.run_id )
+            result = run.update_ANRun( self.run_id, **req )
+        else:
+            #all new runs start in the config status
+            self.app.logger.info("Insert %s" % self.run_id )
+            req['status'] = run.CONFIG
+            result = run.insert_ANRun( self.run_id, **req )
+        result = self._clean_response( result )
+        msg = {'status': 'complete',
+                'data': result }
+        return (msg, 200)
+
 
     def DELETE( self ):
         """
@@ -167,7 +202,10 @@ class ActiveRun(Run):
         master_id = None
         if 'master_id' in request.args:
             master_id = request.args['master_id']
-        result = run.get_active_ANRun(run_id= self.run_id, master_id=master_id  )
+        if self.run_id is None:
+            result = run.get_active_ANRun()
+        else:
+            result = run.get_active_ANRun(run_id= self.run_id, master_id=master_id  )
         self.app.logger.info("%r" % result)
         result = self._clean_response( result )
         if result:
