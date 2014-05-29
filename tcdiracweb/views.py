@@ -5,6 +5,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from tcdiracweb import app
 
 from clustermanagement import cm
+from viz import viz
 
 import boto.utils
 from functools import wraps
@@ -17,6 +18,7 @@ google = tcdiracweb.utils.app_init.get_google( app )
 
 app.logger.setLevel(app.config.get('LOGGING_LEVEL'))
 app.register_blueprint( cm, url_prefix='/cm')
+app.register_blueprint( viz, url_prefix='/viz')
 
 
 from tcdiracweb.utils.app_init import crossdomain, secure_page, secure_json, check_id
@@ -99,63 +101,6 @@ def register():
 @app.route('/netresults')
 def show_net_results():
     return render_template('network_results.html')
-
-@app.route('/netresultsfordisplay')
-def get_nets_for_display():
-    from datadirac.aggregate import DataForDisplay
-    import json
-    res =  DataForDisplay.scan()
-    rlist = [r.attribute_values for r in res]
-    for a in rlist:
-        for k,v in a.iteritems():
-            if type(v) is set:
-                a[k]=list(v)
-    if res:
-        return Response( json.dumps(rlist), 
-                mimetype='application/json')
-    else:
-        abort(400)
-
-@app.route("/pvals",methods=['GET'])
-def get_pvalues():
-    import boto
-    import tempfile
-    import pandas
-    import tcdiracweb.utils.maketsv as tsv
-    import json
-    import numpy as np
-
-    df = 'black_6_go_4-joined-2014.02.20.04:09:56.tsv' #request.form["data_file"]
-    bucket = 'ndp-hdproject-csvs' #request.form["data_bucket"]
-    output_format = 'backgrid' # request.form["output_format"]
-    conn = boto.connect_s3()
-    b = conn.get_bucket(bucket)
-    k = b.get_key(df)
-    with tempfile.TemporaryFile() as fp:
-        k.get_contents_to_file(fp)
-        fp.seek(0)
-        table = pandas.read_csv(fp, sep='\t')
-    nv = tsv.NetworkTSV()
-    cutoffs = nv.get_fdr_cutoffs( 'black_6_go_4','2014.02.20.04:09:56',[.05] )
-    #        request.form["black_6_go_4"], 
-    #       request.form["timestamp"], alphas=[request.form['alpha']] )
-    valid = []
-    app.logger.warning(str(cutoffs))
-    app.logger.warning(table.columns)
-    for k,v in cutoffs.iteritems():
-        #valid.append( table[table[k] >= v[request.form['alpha']]['network'].to_list() )
-        valid += table[table[k] <= v['0.05']]['networks'].tolist()
-        app.logger.warning(len(set(valid)))
-    table = table.set_index('networks')
-
-    trimmed = np.log10(table.loc[list(set(valid)), :])
-    if output_format == 'backgrid':
-        return Response( json.dumps(tsv.dataframe_to_backgrid(trimmed)), 
-                mimetype='application/json')
-
-
-    res = "{'table': %s, 'cutoffs': %s}" %(  trimmed.to_json(orient='split'), json.dumps(cutoffs) )
-    return  Response( trimmed.to_json(orient='split'), mimetype='application/json')
     #jsonify({'table':]}) 
 @app.route("/sig_level")
 def get_sig_level():
@@ -185,19 +130,6 @@ def get_bivariate( pathway_id, net_source_id, source_dataframe,
     except Exception as e:
         app.logger.error( str(e) )
         return json.dumps({'error': str(e)})
-
-@app.route('/expression',methods=['GET'])
-def get_expression():
-    run_id = request.form['run_id']
-    timestamp = request.form['timestamp']
-    pathway = request.form['pathway']
-    by_rank = request.form['by_rank']
-    result = maketsv.get_expression_from_run(run_id, timestamp, pathway, by_rank)
-    return jsonify( result )
-
-@app.route('/comparegenes/<pathway_id>')
-def genedifference( pathway_id ):
-    return render_template('differencechart.html', pathway_id=pathway_id)
 
 @app.route('/auth_check')
 @secure_json

@@ -132,6 +132,10 @@ if( isEmptyObject(key_pairs) ){
             <strong>Master</strong> :
             <%= master_name %>
         </li>
+        <li class="list-group-item">
+            <strong>Worker ID</Strong> :
+            <%= worker_id %>
+        </li>
 
         <li class="list-group-item">
             <strong> Type </strong>:
@@ -144,7 +148,6 @@ if( isEmptyObject(key_pairs) ){
             <strong>AWS Region</Strong> :
             <%= aws_region %>
         </li>
-       
         <li class="list-group-item">
             <strong>Nodes( <%= num_nodes %> )</strong>
             <%= nodes.join(', ') %>

@@ -54,6 +54,7 @@
         {% endblock %}
         <script>
             var app = (app || {});
+
         </script>
     </head>
     <body>
@@ -88,6 +89,7 @@
                     <span class="icon-bar"></span>
                   </button>
                   <a class="navbar-brand" href="#"><strong>AUREA</strong> Nebula</a>
+
                 </div>
 
                 <!-- Collect the nav links, forms, and other content for toggling -->
@@ -138,5 +140,11 @@
         {% block content %}{% endblock %}
         <div id="footer" class="footer">{% block footer %}&copy; Copyright 2014 by John C Earls{% endblock %} </div>
     </div>
+        <script>
+            //remove if this ever goes live
+            if(location.hostname == 'aurea-nebula-dev.adversary.us'){
+                $('a.navbar-brand').append(' <span style="color:red;font-size:150%">DEV</span>');
+            }
+        </script>
     </body>
 </html>
