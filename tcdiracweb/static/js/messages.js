@@ -30,7 +30,6 @@ function auth_check(){
             if (confirm("Session timeout.")){
                 app.sessionActive = false;
                 window.location = '/logout';
-                location.reload(true);
             }
         });
 }
