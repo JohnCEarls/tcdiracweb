@@ -29,6 +29,7 @@ function auth_check(){
         .fail( function(){
             if (confirm("Session timeout.")){
                 app.sessionActive = false;
+                window.location = '/logout';
                 location.reload(true);
             }
         });
