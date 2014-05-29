@@ -52,6 +52,9 @@
         <!-- global js templates -->
         {% include 'jstemplates/nav-templates.html' %}
         {% endblock %}
+        <script>
+            var app = (app || {});
+        </script>
     </head>
     <body>
         {% with messages = get_flashed_messages(with_categories=true) %}
@@ -105,6 +108,10 @@
                                 Register
                             </a>
                         {%elif session and session.google_token%}
+                            <script>
+                                auth_check();
+                                setInterval( function(){ auth_check(); }, 60000);
+                            </script>
                             <a  class="btn btn-default "  href="{{ url_for('logout') }}">
                                 Logout
                             </a>

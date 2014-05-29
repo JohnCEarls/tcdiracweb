@@ -3,6 +3,8 @@ from flask import redirect, url_for, session, request, jsonify, \
         render_template, flash, abort, Response
 from tcdiracweb.views import app
 
+import json
+
 def get_google( app ):
     oauth = OAuth(app)
     app.logger.debug( app.config.keys() )
@@ -31,9 +33,13 @@ def check_id():
     if 'user_data' in session and 'id' in session['user_data']:
         me = google.get('userinfo')
         if 'id' in me.data:#server reboot fubars this, just log user out
-            app.logger.debug( me.data['id'] )
-            app.logger.debug( session['user_data']['id'] )
             return u_man.hash_id( me.data['id'] ) == session['user_data']['id']
+        else:
+            app.logger.warning("id not in me.data")
+            app.logger.warning("me.data: %r" % me )
+    else:
+        app.logger.warning('session missing user_date or if')
+        app.logger.warning('%r' % session)
     return False
 
 def secure_page(f):
@@ -41,6 +47,8 @@ def secure_page(f):
     def decorated_function( *args, **kwargs ):
         if 'user_data' not in session:
             flash('Credentials corrupted', 'error')
+            app.logger.warning('session missing user_data')
+            app.logger.warning('%r' % session)
             return redirect(url_for('logout'))
 
         if u_man.user_registered(session['user_data']['id']):
@@ -48,6 +56,8 @@ def secure_page(f):
                 if check_id():
                     return f(*args, **kwargs)
                 else:
+                    app.logger.warning('check_id failed')
+                    app.logger.warning('%r' %session )
                     flash('Credentials corrupted', 'error')
                     return redirect(url_for('logout'))
             else:
@@ -57,6 +67,44 @@ def secure_page(f):
             flash('Not Registered.  Click Register.')
         return redirect(url_for('login'))
     return decorated_function
+
+def secure_json(f):
+    """
+    A security wrapper for json pages
+    """
+    @wraps(f)
+    def decorated_function( *args, **kwargs ):
+        status = 401
+        msg = {'status':'error',
+               'data' : '',
+               'message' : 'Authentication Error. Please login' }
+        error = False
+        app.logger.debug("Session: %r" %session)
+        if 'user_data' not in session:
+            app.logger.warning('session missing user_data')
+            app.logger.warning('%r' % session)
+            error = True 
+        elif u_man.user_registered(session['user_data']['id']):
+            if  u_man.user_active(session['user_data']['id']):
+                if check_id():
+                    return f(*args, **kwargs)
+                else:
+                    app.logger.warning('check_id failed')
+                    app.logger.warning('%r' %session )
+                    error = True
+            else:
+                error = True
+                msg['message'] = 'User not active. Contact john.c.earls@gmail.com' +\
+                ' to activate.'
+        else:
+            msg['message'] = 'User Not Registered'
+            flash('Not Registered.  Click Register.')
+            error = True
+        if error:
+            return Response( json.dumps( msg ), mimetype='application/json',
+                        status = status )
+    return decorated_function
+
 
 from datetime import timedelta
 from flask import make_response, request, current_app

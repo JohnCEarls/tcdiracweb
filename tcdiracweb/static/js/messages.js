@@ -19,3 +19,17 @@ function show_message( type, message ){
     $('body').prepend(m)
     }
 }
+
+function auth_check(){
+    $.get('/auth_check')
+        .done( function(){
+            //hurray, we logged in
+            app.sessionActive = true;
+        })
+        .fail( function(){
+            if (confirm("Session timeout.")){
+                app.sessionActive = false;
+                location.reload(true);
+            }
+        });
+}

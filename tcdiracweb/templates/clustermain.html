@@ -20,7 +20,6 @@
     AWS.config.credentials.params.WebIdentityToken = "{{session['id_token']}}";
     AWS.config.sslEnabled = true;
     g_instance_id = '{{ instance_id }}';
-    g_scgenerate_url = '{{ url_for('cm.scgenerate_config') }}';
 </script>
 {% endblock %}
 {% block content %}

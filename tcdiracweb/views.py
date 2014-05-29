@@ -10,6 +10,7 @@ import boto.utils
 from functools import wraps
 import multiprocessing
 import logging
+import json
 
 import tcdiracweb.utils.app_init
 google = tcdiracweb.utils.app_init.get_google( app )
@@ -18,7 +19,7 @@ app.logger.setLevel(app.config.get('LOGGING_LEVEL'))
 app.register_blueprint( cm, url_prefix='/cm')
 
 
-from tcdiracweb.utils.app_init import crossdomain, secure_page, check_id
+from tcdiracweb.utils.app_init import crossdomain, secure_page, secure_json, check_id
 import tcdiracweb.utils.user_management as u_man
 
 @app.route('/')
@@ -197,3 +198,13 @@ def get_expression():
 @app.route('/comparegenes/<pathway_id>')
 def genedifference( pathway_id ):
     return render_template('differencechart.html', pathway_id=pathway_id)
+
+@app.route('/auth_check')
+@secure_json
+def auth_check():
+    msg = {'status': 'complete',
+            'data': {'authenticated':True}
+            }
+    status = 200
+    return Response( json.dumps( msg ), mimetype='application/json',
+                        status = status )
