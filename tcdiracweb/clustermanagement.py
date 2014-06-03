@@ -98,6 +98,7 @@ def get_active_run( run_id = None ):
 @secure_json
 def initialize_worker( ):
     """
+    Initializes the cluster settings
     REQUEST LIKE:
     {'cluster_type': ...
         'aws_region':...
@@ -114,6 +115,7 @@ def initialize_worker( ):
 @secure_json
 def activate_worker( worker_id ):
     """
+    Starts up the cluster
     REQUEST IRRELEVANT
     ==================
     should add some security features, but this is fine for now

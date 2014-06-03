@@ -36,6 +36,7 @@ def check_id():
             return u_man.hash_id( me.data['id'] ) == session['user_data']['id']
         else:
             app.logger.warning("id not in me.data")
+            app.logger.warning("me.data.status %r" % me.data.status)
             app.logger.warning("me.data: %r" % me )
     else:
         app.logger.warning('session missing user_date or if')

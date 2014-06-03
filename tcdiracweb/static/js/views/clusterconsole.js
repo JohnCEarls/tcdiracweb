@@ -46,7 +46,49 @@ var MasterRow = Backbone.View.extend({
     events : {
         'click .master-info' : 'loadSideView',
         'click .refresh' : 'refresh',
+        'click .start-all-clusters' : 'startAllClusters',
+        'click .terminate-all-clusters' : 'terminateAllClusters',
+        'click .activate-all-workers' : 'activateAllWorkers',
+        'click .stop-all-workers' : 'stopAllWorkers',
     },
+    startAllClusters : function(){
+        this.sendAllCommand('/cm/activate/worker/all');
+
+    },
+    terminateAllClusters : function(){
+        this.sendAllCommand('/cm/terminate/worker/all')
+    },
+
+    activateAllWorkers : function(){
+        this.sendAllCommand('/cm/activate/server/all');
+    },
+    stopAllWorkers : function(){
+        this.sendAllCommand('/cm/stop/server/all');
+    },
+    sendAllCommand : function(url){
+        if( app.worker_collection.length === 0){
+            alert('No clusters configured');
+            return;
+        }
+        $.post(url, {},
+            function( data, textStatus, jqXHR )
+            {
+                if(data.data){
+                    _.forEach(data.data, function( worker_id ){
+                        for(var i=0; i<40; i++){
+                            var time =i*i*100 +  5000 * i + 1000 * Math.random();
+                            var wrk_mdl = app.worker_collection.get( worker_id );
+                            setTimeout( function(){
+                                var wrk_mdl = app.worker_collection.get( worker_id );
+                                wrk_mdl.fetch();
+                            }, time );
+                        }
+                    });
+                }
+            }
+        );
+    },
+
 
     render : function() {
         if(this.model.get('master_name') == 'None'){
@@ -63,6 +105,7 @@ var MasterRow = Backbone.View.extend({
             json_model['st_status'] = this.model.str_status();
             $(this.el).html( this.template( json_model ) );
             this.el.className = this.className;
+            this.addGroupActivationButtons();
             this.addWorkerButtons();
         }
         return this;
@@ -76,6 +119,20 @@ var MasterRow = Backbone.View.extend({
                master_model : that.model,
                el : that.$el.find('#master-action-menu'),
         });
+    },
+
+    addGroupActivationButtons : function(){
+        menu = this.$el.find('#master-action-menu');
+        menu.append('<li><a href="#" class="start-all-clusters">' +
+                    '<span class="glyphicon glyphicon-music"></span> ' +
+                    'Launch All Clusters</a></li>');
+        menu.append('<li><a href="#" class="terminate-all-clusters">'+
+                    '<span class="glyphicon glyphicon-remove"></span>' +
+                    ' Terminate All Clusters</a></li>');
+        menu.append('<li class="divider"></li>');
+        menu.append('<li><a href="#" class="activate-all-workers"><span class="glyphicon glyphicon-heart"></span> Start All Servers</a></li>');
+        menu.append('<li><a href="#" class="stop-all-workers"><span class="glyphicon glyphicon-exclamation-sign"></span> Stop All Servers</a></li>');
+        menu.append('<li class="divider"></li>');
     },
 
     loadSideView : function(){
@@ -470,7 +527,6 @@ var DefaultWorkerDropdownView = Backbone.View.extend({
         'click .add-cluster' : 'addCluster',
     },
     addCluster : function(){
-
         if( app.master_model && app.master_model.get('master_name') !== "None"){
             msg = {
                 cluster_type : this.model.get('cluster_type'),

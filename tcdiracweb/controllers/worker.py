@@ -63,7 +63,7 @@ class Worker:
         elif action == 'active':
             return self._activate_worker( req_d )
         elif action == 'active-all':
-            return self._activate_worker( req_d )
+            return self._activate_worker_all( req_d )
         elif action == 'activate-server':
             return self._activate_server( req_d )
         elif action == 'activate-server-all':
@@ -138,21 +138,22 @@ class Worker:
         Generate message for launcher in queue to request that
         the master starts the cluster
         """
-        self._activate_single_worker( self.worker_id )
+        return self._activate_single_worker( self.worker_id )
 
-    def _activate_worker_all(self ):
+    def _activate_worker_all(self, req_d ):
         ls = sys_def_mdl.get_system_defaults('local_settings', 'Master')
         branch = ls['branch']
         self.app.logger.info("GETting workers for the %s branch" % (
             branch ))
         workers = wkr.get_active_workers(branch)
         workers = [json_prep( worker ) for worker in workers]
+        worker_list = []
         for worker in workers:
-            self._activate_single_worker( worker['worker_id'] )
-
-        worker_list = [worker['worker_id'] for worker in workers]
+            if worker['status'] == 0:
+                self._activate_single_worker( worker['worker_id'] )
+                worker_list.append( worker['worker_id'] )
         msg = {'status':'complete',
-                'data' : json_prep( worker_list )}
+                'data' : worker_list }
         status = 200
         return ( msg, status )
 
@@ -201,16 +202,18 @@ class Worker:
                 setting_name = 'launcher_config', component='Master' )
         conn = boto.sqs.connect_to_region('us-east-1')
         lq = conn.create_queue( launcher_config['launcher_sqs_in'] )
-        launcher_message_list = []
+        worker_list = []
+        active_statuses = [wkr.READY, wkr.RUNNING]
         for worker in workers:
-            launcher_message = {'action': 'activate-server',
-                                'worker_id': worker['worker_id'],
-                    }
-            launcher_message_list.append( launcher_message )
-            mess = Message(body=json.dumps( launcher_message ))
-            lq.write( mess )
+            if worker['status'] in active_statuses:
+                launcher_message = {'action': 'activate-server',
+                                    'worker_id': worker['worker_id'],
+                        }
+                worker_list.append( worker['worker_id'] )
+                mess = Message(body=json.dumps( launcher_message ))
+                lq.write( mess )
         msg = {'status': 'complete',
-                'data': launcher_message_list }
+                'data': worker_list }
         status = 200
         return ( msg, status )
 
@@ -233,10 +236,10 @@ class Worker:
         status = 200
         return ( msg, status )
 
-    def _activate_server_all( self, req_d):
+    def _stop_server_all( self, req_d):
         ls = sys_def_mdl.get_system_defaults('local_settings', 'Master')
         branch = ls['branch']
-        self.app.logger.info("GETting workers for the %s branch" % (
+        self.app.logger.info("Stopping allworkers for the %s branch" % (
             branch ))
         workers = wkr.get_active_workers(branch)
         workers = [json_prep( worker ) for worker in workers]
@@ -244,16 +247,18 @@ class Worker:
                 setting_name = 'launcher_config', component='Master' )
         conn = boto.sqs.connect_to_region('us-east-1')
         lq = conn.create_queue( launcher_config['launcher_sqs_in'] )
-        launcher_message_list = []
+        worker_list = []
+        active_statuses = [wkr.READY, wkr.RUNNING]
         for worker in workers:
-            launcher_message = {'action': 'stop-server',
-                                'worker_id': worker['worker_id'],
-                    }
-            launcher_message_list.append( launcher_message )
-            mess = Message(body=json.dumps( launcher_message ))
-            lq.write( mess )
+            if worker['status'] in active_statuses:
+                launcher_message = {'action': 'stop-server',
+                                    'worker_id': worker['worker_id'],
+                        }
+                worker_list.append( worker['worker_id'] )
+                mess = Message(body=json.dumps( launcher_message ))
+                lq.write( mess )
         msg = {'status': 'complete',
-                'data': launcher_message_list }
+                'data': [w['worker_id'] for w in workers] }
         status = 200
         return ( msg, status )
 
@@ -296,7 +301,7 @@ class Worker:
             mess = Message(body=json.dumps( launcher_message ))
             lq.write( mess )
         msg = {'status': 'complete',
-                'data': launcher_message_list }
+                'data':  [w['worker_id'] for w in workers]  }
         status = 200
         return ( msg, status )
 
@@ -311,12 +316,14 @@ class Worker:
             branch ))
         workers = wkr.get_active_workers(branch)
         workers = [json_prep( worker ) for worker in workers]
+        terminatable_statuses = [wkr.NA, wkr.CONFIG, wkr.READY, wkr.RUNNING, 
+                wkr.MARKED_FOR_TERMINATION]
         for worker in workers:
-            self._terminate_single_worker( worker['worker_id'] )
-
+            if worker['status'] in terminatable_statuses:
+                self._terminate_single_worker( worker['worker_id'] )
         worker_list = [worker['worker_id'] for worker in workers]
         msg = {'status':'complete',
-                'data' : json_prep( worker_list )}
+                'data' : worker_list }
         status = 200
         return ( msg, status )
 
