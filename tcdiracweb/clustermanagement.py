@@ -120,7 +120,10 @@ def activate_worker( worker_id ):
     """
     import tcdiracweb.controllers.worker as wkr
     w = wkr.Worker( current_app, worker_id)
-    (msg, status) = w.POST( request, 'active')
+    if worker_id == 'all':
+        (msg, status) = w.POST( request, 'active-all')
+    else:
+        (msg, status) = w.POST( request, 'active')
     return Response( json.dumps( msg ), mimetype="application/json",
             status= status )
 
@@ -130,11 +133,13 @@ def activate_server( worker_id ):
     """
     REQUEST IRRELEVANT
     ==================
-    should add some security features, but this is fine for now
     """
     import tcdiracweb.controllers.worker as wkr
     w = wkr.Worker( current_app, worker_id)
-    (msg, status) = w.POST( request, 'activate-server')
+    if worker_id == 'all':
+        (msg, status) = w.POST( request, 'activate-server-all')
+    else:
+        (msg, status) = w.POST( request, 'activate-server')
     return Response( json.dumps( msg ), mimetype="application/json",
             status= status )
 
@@ -149,7 +154,10 @@ def stop_server( worker_id ):
 
     import tcdiracweb.controllers.worker as wkr
     w = wkr.Worker( current_app, worker_id)
-    (msg, status) = w.POST( request, 'stop-server')
+    if worker_id == 'all':
+        (msg, status) = w.POST( request, 'stop-server-all')
+    else:
+        (msg, status) = w.POST( request, 'stop-server')
     return Response( json.dumps( msg ), mimetype="application/json",
             status= status )
 
@@ -163,7 +171,10 @@ def status_server( worker_id ):
     """
     import tcdiracweb.controllers.worker as wkr
     w = wkr.Worker( current_app, worker_id)
-    (msg, status) = w.POST( request, 'status-server')
+    if worker_id == 'all':
+        (msg, status) = w.POST( request, 'status-server-all')
+    else:
+        (msg, status) = w.POST( request, 'status-server')
     return Response( json.dumps( msg ), mimetype="application/json",
             status= status )
 
@@ -176,7 +187,10 @@ def terminate_worker( worker_id ):
     """
     import tcdiracweb.controllers.worker as wkr
     w = wkr.Worker( current_app, worker_id)
-    (msg, status) = w.POST( request, 'terminate')
+    if worker_id == 'all':
+        (msg, status) = w.POST( request, 'terminate-all')
+    else:
+        (msg, status) = w.POST( request, 'terminate')
     return Response( json.dumps( msg ), mimetype="application/json",
             status= status )
 
