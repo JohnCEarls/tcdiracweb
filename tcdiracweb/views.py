@@ -1,8 +1,8 @@
 from flask import Flask, redirect, url_for, session
 from flask import request, jsonify, render_template, flash, abort, Response
 from werkzeug.security import generate_password_hash, check_password_hash
-
 from tcdiracweb import app
+import datetime
 
 from clustermanagement import cm
 from viz import viz
@@ -42,12 +42,17 @@ def authorized(resp):
             request.args['error_description']), 'error')
         return redirect(url_for('login'))
     flash('Logged In.', 'welcome')
-    app.logger.debug( str(resp) )
+    app.logger.info( str(resp) )
     session['google_token'] = (resp['access_token'], '')
     session['id_token'] = resp['id_token']
+    future = datetime.datetime.now() + datetime.timedelta(seconds=int(resp['expires_in']))
+    session['expires'] = future.strftime("%s")
+    if 'refresh_token' in resp:
+        session['refresh_token'] = resp['refresh_token']
     me = google.get('userinfo')
-    app.logger.debug(str(google.get('*').data))
     me.data['google_token'] = session['google_token']
+    app.logger.info(me.data)
+    app.logger.info(me.data['id'])
     session['user_data'] = { 'name': me.data['name'],
                             'id':  u_man.hash_id( me.data['id'] ),
                             'email':me.data['email'],
@@ -62,6 +67,7 @@ def authorized(resp):
 @google.tokengetter
 def get_google_oauth_token():
     return session.get('google_token')
+
 
 @app.route('/awssqs')
 @secure_page

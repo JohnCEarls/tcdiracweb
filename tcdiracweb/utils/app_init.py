@@ -2,6 +2,8 @@ from flask_oauthlib.client import OAuth
 from flask import redirect, url_for, session, request, jsonify, \
         render_template, flash, abort, Response
 from tcdiracweb.views import app
+import datetime
+import urllib2, urllib
 
 import json
 
@@ -13,7 +15,9 @@ def get_google( app ):
         consumer_key=app.config.get('GOOGLE_ID'),
         consumer_secret=app.config.get('GOOGLE_SECRET'),
         request_token_params={
-            'scope': ['profile', 'https://www.googleapis.com/auth/userinfo.email']
+            'scope': ['profile', 'https://www.googleapis.com/auth/userinfo.email'],
+            'approval_prompt' : 'force',
+            'access_type':'offline'
         },
         base_url='https://www.googleapis.com/oauth2/v1/',
         request_token_url=None,
@@ -27,6 +31,41 @@ import tcdiracweb.utils.user_management as u_man
 import tcdiracweb.views 
 from functools import wraps
 
+def refresh_token():
+    from tcdiracweb.views import google
+    expires = 0
+    if 'expires' in session:
+        expires = int(session['expires']) - int(datetime.datetime.now().strftime("%s")) 
+        app.logger.info( 'session expires %i sec' % expires )
+    if expires < 10*60 and 'refresh_token' in session:#expires within 10 minutes
+        url = 'https://accounts.google.com/o/oauth2/token'
+        request = {'refresh_token': session['refresh_token'],
+                   'client_id' :app.config.get('GOOGLE_ID'),
+                   'client_secret': app.config.get('GOOGLE_SECRET'),
+                   'grant_type':'refresh_token'}
+        data = urllib.urlencode(request)
+        app.logger.info(data)
+        req = urllib2.Request(url, data)
+        response = urllib2.urlopen(req)
+        app.logger.info( response )
+        the_page = response.read()
+        resp = json.loads(the_page)
+        app.logger.info(the_page)
+        session.pop('google_token', None)
+        session.pop('id_token', None)
+        session.pop('user_data', None)
+        session['google_token'] = (resp['access_token'], '')
+        session['id_token'] = resp['id_token']
+        future = datetime.datetime.now() + datetime.timedelta(seconds=int(resp['expires_in']))
+        session['expires'] = future.strftime("%s")
+        me = google.get('userinfo')
+        session['user_data'] = { 'name': me.data['name'],
+                                'id':  u_man.hash_id( me.data['id'] ),
+                                'email':me.data['email'],
+                                'picture':me.data['picture']}
+        session['user_data']['registered'] = u_man.user_registered(session['user_data']['id'])
+        session['user_data']['active'] = u_man.user_active(session['user_data']['id'])
+
 
 def check_id():
     from tcdiracweb.views import google
@@ -36,7 +75,7 @@ def check_id():
             return u_man.hash_id( me.data['id'] ) == session['user_data']['id']
         else:
             app.logger.warning("id not in me.data")
-            app.logger.warning("me.data.status %r" % me.data.status)
+            app.logger.warning("me.data %r" % me.data)
             app.logger.warning("me.data: %r" % me )
     else:
         app.logger.warning('session missing user_date or if')
@@ -46,6 +85,7 @@ def check_id():
 def secure_page(f):
     @wraps(f)
     def decorated_function( *args, **kwargs ):
+        refresh_token()
         if 'user_data' not in session:
             flash('Credentials corrupted', 'error')
             app.logger.warning('session missing user_data')
