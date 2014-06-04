@@ -1,4 +1,5 @@
 from flask import Flask, redirect, url_for, session
+
 from flask import request, jsonify, render_template, flash, abort, Response
 from werkzeug.security import generate_password_hash, check_password_hash
 from tcdiracweb import app

@@ -116,6 +116,7 @@ def secure_json(f):
     @wraps(f)
     def decorated_function( *args, **kwargs ):
         status = 401
+        refresh_token()
         msg = {'status':'error',
                'data' : '',
                'message' : 'Authentication Error. Please login' }

@@ -25,11 +25,5 @@ function auth_check(){
         .done( function(){
             //hurray, we logged in
             app.sessionActive = true;
-        })
-        .fail( function(){
-            if (confirm("Session timeout.")){
-                app.sessionActive = false;
-                window.location = '/logout';
-            }
         });
 }
