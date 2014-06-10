@@ -11,6 +11,7 @@ import cPickle as pickle
 import random
 import re
 import string
+import masterdirac.models.run as run_mdl
 
 opj = os.path.join
 class TSVGen:
@@ -36,13 +37,18 @@ class TSVGen:
             b = s3.get_bucket(self._source_bucket)
             k = Key(b)
             k.key = fname 
-            k.get_contents_to_filename( opj( self._local_data_path, fname ) ) 
+            f = self.strip_path( fname )
+            k.get_contents_to_filename( opj( self._local_data_path, f ) ) 
+    
+    def strip_path( self, key_name):
+        p, f = os.path.split( key_name )
+        return f
 
     def loadData( self ):
         sd = data.SourceData()
-        sd.load_dataframe( opj( self._local_data_path,self.df) )
+        sd.load_dataframe( opj( self._local_data_path, self.strip_path(self.df)) )
         sd.load_net_info(self._net_table, self._net_source_id )
-        mi = data.MetaInfo( opj( self._local_data_path, self.meta ) )
+        mi = data.MetaInfo( opj( self._local_data_path, self.strip_path(self.meta) ) )
         self._sd = sd
         self._mi = mi
 
@@ -375,7 +381,7 @@ def dumpExpression():
                     return
             print pw
 
-def get_expression_from_run( run_id, timestamp, pathway, by_rank ):
+def get_expression_from_run( run_id, pathway, by_rank ):
     res = RunGPUDiracModel.get( run_id, timestamp )
     config = json.loads(base64.b64decode( res.config ))
     net_table = config['network_config']['network_table']
