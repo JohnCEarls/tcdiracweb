@@ -196,6 +196,7 @@ def terminate_worker( worker_id ):
     return Response( json.dumps( msg ), mimetype="application/json",
             status= status )
 
+
 @cm.route('/active/worker', methods=['GET'])
 @cm.route('/active/worker/<worker_id>', methods=['GET'])
 @secure_json
@@ -216,6 +217,29 @@ def get_worker_log( worker_id ):
     import tcdiracweb.controllers.worker as wkr
     worker = wkr.WorkerLog( current_app, worker_id )
     (msg, status) =  worker.GET( request )
+    return Response( json.dumps( msg ), mimetype="application/json",
+            status= status )
+
+@cm.route('/sqs/status/<queue_name>', methods=['GET'])
+@cm.route('/sqs/status/<queue_name>/<region>', methods=['GET'])
+@secure_json
+def get_sqs_info( queue_name, region='us-east-1' ):
+    msg,status = ({},400)
+    import boto
+    sqs = boto.sqs.connect_to_region( region )
+    try:
+        q = sqs.get_queue( queue_name )
+        msg = { 'status': 'complete',
+                'data' : {'count':q.count()}
+              }
+        status = 200
+    except:
+        msg = {'status': 'error',
+                'data' : {},
+                'message': 'unable to retrieve information from %s/%s ' % (
+                    region, queue_name )
+                }
+        status = 404
     return Response( json.dumps( msg ), mimetype="application/json",
             status= status )
 

@@ -19,6 +19,7 @@ var RunView = Backbone.View.extend({
         console.log( st_status )
         json_model['st_status'] = st_status;
         $(this.el).html( this.template( json_model ) );
+        this.getSQSCount();
         return this;
     },
 
@@ -65,8 +66,15 @@ var RunView = Backbone.View.extend({
         } else {
             alert('You can only initialize runs with CONFIG(-10) status');
         }
-        
     },
+    getSQSCount : function(){
+        fd2g = this.model.get('intercomm_settings').sqs_from_data_to_gpu;
+        console.log('getSQSCounts');
+        console.log(fd2g);
+        console.log( $('span.badge#' + fd2g) );
+        getSQSCount( fd2g, $('span.badge#' + fd2g));
+    },
+
 }); 
 
 var RunCollectionView = Backbone.View.extend({

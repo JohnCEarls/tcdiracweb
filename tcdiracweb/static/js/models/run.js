@@ -64,7 +64,7 @@ var Run = Backbone.Model.extend({
     },
 
     initializeRun : function(){
-        var url = '/cm/pending/run/' + this.get('run_id');
+
         var msg = { 'todo': 'add security features'}
         that = this;
         if( this.get('status') == -10){
@@ -130,3 +130,15 @@ var ActiveRunCollection = Backbone.Collection.extend({
         return response;
     },
 });
+
+var getSQSCount = function ( sqs_queue, result_holder ){
+    var url = '/cm/sqs/status/' + sqs_queue;
+    console.log('gsq');
+    $.getJSON( url )
+        .done( function( response  ){
+            result_holder.html( response.data.count );
+         })
+        .fail( function(){
+            result_holder.html('ERR');
+        });
+}

@@ -445,13 +445,26 @@ if( isEmptyObject(key_pairs) ){
           <div class="panel-body">
             <ul class="list-group">
                 <li class="list-group-item"><em>SQS Data to GPU:</em> 
-                        <%= intercomm_settings.sqs_from_data_to_gpu %></li>
+                        <%= intercomm_settings.sqs_from_data_to_gpu %>
+                    <span class="badge" id="<%= intercomm_settings.sqs_from_data_to_gpu %>">
+                    </span>
+                </li>
                 <li class="list-group-item"><em>SQS GPU to Aggregator:</em> 
-                        <%= intercomm_settings.sqs_from_gpu_to_agg %></li>
+                        <%= intercomm_settings.sqs_from_gpu_to_agg %>
+                    <span class="badge" id="<%= intercomm_settings.sqs_from_gpu_to_agg %>">
+                    </span>
+</li>
                 <li class="list-group-item"><em>SQS Data to Aggregator:</em> 
-                        <%= intercomm_settings.sqs_from_data_to_agg %></li>
+                        <%= intercomm_settings.sqs_from_data_to_agg %>
+                    <span class="badge" id="<%= intercomm_settings.sqs_from_data_to_agg %>">
+                    </span>
+                </li>
                 <li class="list-group-item"><em>SQS Data to Aggregator(Truth):</em> 
-                        <%= intercomm_settings.sqs_from_data_to_agg_truth %></li>
+                        <%= intercomm_settings.sqs_from_data_to_agg_truth %>
+                    <span class="badge" id="<%= intercomm_settings.sqs_from_data_to_agg_truth %>">
+                    </span>
+
+</li>
                 <li class="list-group-item"><em>S3 Data to GPU</em> 
                         <%= intercomm_settings.s3_from_data_to_gpu %></li>
                 <li class="list-group-item"><em>S3 GPU to Aggregator</em> 
