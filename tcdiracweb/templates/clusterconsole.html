@@ -13,7 +13,7 @@
     url_for('static', filename='js/models/worker.js') }}"></script>
 <script type="text/javascript" src="{{ 
     url_for('static', filename='js/models/run.js') }}"></script>
-
+<script src="//cdnjs.cloudflare.com/ajax/libs/numeral.js/1.4.5/numeral.min.js"></script>
 <script type="text/javascript">
     AWS.config.credentials = new AWS.WebIdentityCredentials({
         RoleArn: "{{ app.config.get('AWS_ROLE_ARN_GOOGLE') }}"

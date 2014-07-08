@@ -618,13 +618,24 @@ var RunView = Backbone.View.extend({
         this.getSQSCount();
         return this;
     },
-    
+
     getSQSCount : function(){
-        fd2g = this.model.get('intercomm_settings').sqs_from_data_to_gpu;
-        console.log('getSQSCounts');
-        console.log(fd2g);
-        console.log( $('span.badge#' + fd2g) );
-        getSQSCount( fd2g, $('span.badge#' + fd2g));
+        var interSet =  this.model.get('intercomm_settings');
+        for(var setting in interSet){
+            if( setting.slice(0,3) === 'sqs' ){
+                var url = '/cm/sqs/status/' + interSet[setting];
+                $.getJSON( url )
+                    .done( function( response ){
+                        var selector = 'span.badge#' + response.data['q_name'];
+                        $(selector).html( numeral(response.data['count']).format('0,0') );
+                    })
+                    .fail( function( response ){
+                        var selector = 'span.badge#' + response.responseJSON.data['q_name'];
+                        $(selector).addClass('alert-danger');
+                        $(selector).html('NA');
+                    });
+            }
+        }
     },
 }); 
 

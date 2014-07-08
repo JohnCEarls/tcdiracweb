@@ -230,12 +230,16 @@ def get_sqs_info( queue_name, region='us-east-1' ):
     try:
         q = sqs.get_queue( queue_name )
         msg = { 'status': 'complete',
-                'data' : {'count':q.count()}
+                'data' : {  'region':region,
+                            'q_name':queue_name,
+                            'count':q.count()}
               }
         status = 200
     except:
         msg = {'status': 'error',
-                'data' : {},
+                'data' : {  'region':region,
+                            'q_name':queue_name,
+                            'count':'NA'},
                 'message': 'unable to retrieve information from %s/%s ' % (
                     region, queue_name )
                 }
