@@ -90,6 +90,23 @@ var Run = Backbone.Model.extend({
         }
         return status_map[ this.get('status').toString() ];
     },
+    // return the status label to this runs status, see bootstrap
+    viz_status : function(){
+        var stat = this.get('status').toString();
+        var viz_status_map = {
+            '-10': 'default',
+            '0': 'warning',
+            '10': 'success',
+            '15': 'success',
+            '20': 'info',
+            '30': 'danger'
+        }
+        if( typeof viz_status_map[stat] === "undefined"){
+            return 'danger';
+        } else {
+            return viz_status_map[ stat ];
+        }
+    },
 
 });
 
@@ -97,6 +114,23 @@ var RunCollection = Backbone.Collection.extend({
     model: Run,
     url : '/cm/run',
     comparator : 'run_id',
+    viz_status_map : {
+        '-10': 'default',
+        '0': 'warning',
+        '10': 'success',
+        '15': 'success',
+        '20': 'info',
+        '30': 'danger'
+    },
+
+    str_status_map : {
+        '-10': 'CONFIG',
+        '0': 'INIT',
+        '10': 'ACTIVE',
+        '15': 'ACTIVE_ALL_SENT',
+        '20': 'COMPLETE',
+        '30': 'ABORT'
+    },
 
     parse : function( response ){
         if( response.data ){

@@ -6,7 +6,7 @@ var RunView = Backbone.View.extend({
     type : "RunView",
     template : _.template( $('#template-run').html() ),
     tagName:"div",
-    className : "panel panel-primary",
+    className : "panel ",
     initialize : function(){
         _.bindAll.apply(_, [this].concat(_.functions(this)));
         this.model.on('change', this.render, this);
@@ -14,11 +14,14 @@ var RunView = Backbone.View.extend({
     },
 
     render : function(){
-        json_model = this.model.toJSON();
+        var json_model = this.model.toJSON();
         var st_status = this.model.str_status();
-        console.log( st_status )
+        var viz_status = this.model.viz_status();
         json_model['st_status'] = st_status;
-        $(this.el).html( this.template( json_model ) );
+        json_model['viz_status'] = viz_status;
+        this.$el.addClass('panel-' + viz_status) ;
+        this.$el.html( this.template( json_model ) );
+        this.$el.find('.label').addClass('label-'+ viz_status);
         return this;
     },
 
