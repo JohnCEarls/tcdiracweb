@@ -22,6 +22,7 @@ var RunView = Backbone.View.extend({
         this.$el.addClass('panel-' + viz_status) ;
         this.$el.html( this.template( json_model ) );
         this.$el.find('.label').addClass('label-'+ viz_status);
+        this.setVisibility();
         return this;
     },
 
@@ -69,6 +70,19 @@ var RunView = Backbone.View.extend({
             alert('You can only initialize runs with CONFIG(-10) status');
         }
     },
+
+    setVisibility : function(){
+        if( this.statusChecked() ){
+            this.$el.show();
+        }else{
+            this.$el.hide();
+        }
+
+    },
+    statusChecked : function( ){
+        return $('input#' + this.model.str_status()).prop('checked');
+        return ckd.length > 0;
+    },
 }); 
 
 var RunCollectionView = Backbone.View.extend({
@@ -83,6 +97,8 @@ var RunCollectionView = Backbone.View.extend({
     render : function(){
         var outputHtml = this.template();
         $(this.el).html( outputHtml );
+        this.addSelectors();
+        this.$el.find('#status-select');
         that = this;
         this.collection.fetch({
             add: true,
@@ -92,6 +108,8 @@ var RunCollectionView = Backbone.View.extend({
         return this;
     },
     loadComplete : function(){},
+
+
 
     /* Adds a runview to the collection view  */
     addOne: function(foo) {
@@ -123,8 +141,26 @@ var RunCollectionView = Backbone.View.extend({
         }
     },
 
+    selectorChange : function(e){
+        _.forEach(this.collection.models, function(model){
+            model.trigger('change');
+        });
+    },
+
+    addSelectors : function(){
+        for( var stat in this.collection.str_status_map ){
+            var template = _.template( $('#template-run-list-select-btn').html() );
+            var outHTML = template( { status : stat, 
+                     str_status : this.collection.str_status_map[stat],
+                     viz_status : this.collection.viz_status_map[stat],
+            });
+            this.$el.find('#status-select').append(outHTML);
+        }
+    },
+
     events : {
-        'click .insert' : 'loadInsertForm'
+        'click .insert' : 'loadInsertForm',
+        'change .mycheckbox': 'selectorChange',
     },
 
     /** send run to form **/

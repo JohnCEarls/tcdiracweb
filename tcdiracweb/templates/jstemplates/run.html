@@ -223,15 +223,15 @@
             <span class="glyphicon glyphicon-plus"></span> New 
          </button>
       </h4>
-    <div class="btn-group" id="status-select" data-toggle="buttons">
+    <div class="btn-group" id="status-select" data-toggle="buttons"></div>
     </div>
   </div>
 </div>
 </script>
 
 <script type="text/template" id="template-run-list-select-btn">
-    <label class="btn">
-        <input type="checkbox" name="select-run" value="<%= status %>"><% str_status %>
+    <label class="btn btn-<%= viz_status %> ">
+        <input type="checkbox" class="mycheckbox"  id="<%= str_status %>"><%= str_status %>
     </label>
 </script>
 
