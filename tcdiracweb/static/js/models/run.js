@@ -64,6 +64,7 @@ var Run = Backbone.Model.extend({
     },
 
     initializeRun : function(){
+        var url = '/cm/pending/run/' + this.get('run_id');
 
         var msg = { 'todo': 'add security features'}
         that = this;
