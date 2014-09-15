@@ -20,9 +20,13 @@ runs = run_mdl.get_ANRun()
 
 def writeit( r):
     try:
+        s_run = r['run_id'].split('-')
+        if 'trn' not in s_run or  r['status'] != run_mdl.COMPLETE:
+            return
         if r['run_id'] in ['b6-q111-kegg', 'fvb-analysis1']:
             return 
-        if r['status'] == run_mdl.COMPLETE:
+        if r['status'] != run_mdl.COMPLETE:
+            return
             print r['run_id']
         net_table = r['network_config']['network_table']
         net_source_id = r['network_config']['network_source']
@@ -44,6 +48,7 @@ def writeit( r):
                                 current = t[strain][allele]
                                 dp = '/home/sgeadmin/temp/forjocelyn/%s/%s/%s/%s' % (
                                         r['run_id'], net_source_id, p.pw_id, allele)
+                                
                                 try:
                                     os.makedirs( dp )
                                 except:
@@ -69,5 +74,16 @@ def writeit( r):
         print "ERROR"
         print r
 
+
+if not os.path.exists('/home/sgeadmin/temp'):
+    os.makedirs('/home/sgeadmin/temp')
+if not os.path.exists('/home/sgeadmin/temp/data'):
+    os.makedirs('/home/sgeadmin/temp/data')
+if not os.path.exists('/home/sgeadmin/temp/forjocelyn'):
+    os.makedirs('/home/sgeadmin/temp/forjocelyn')
+
+
 p = Pool(8)
+
 p.map(writeit, runs)
+
