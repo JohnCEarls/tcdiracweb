@@ -50,6 +50,7 @@ var MasterRow = Backbone.View.extend({
         'click .terminate-all-clusters' : 'terminateAllClusters',
         'click .activate-all-workers' : 'activateAllWorkers',
         'click .stop-all-workers' : 'stopAllWorkers',
+        'click .status-all-workers' : 'statusAllWorkers',
     },
     startAllClusters : function(){
         this.sendAllCommand('/cm/activate/worker/all');
@@ -61,6 +62,9 @@ var MasterRow = Backbone.View.extend({
 
     activateAllWorkers : function(){
         this.sendAllCommand('/cm/activate/server/all');
+    },
+    statusAllWorkers : function(){
+        this.sendAllCommand('/cm/status/server/all');
     },
     stopAllWorkers : function(){
         this.sendAllCommand('/cm/stop/server/all');
@@ -131,6 +135,8 @@ var MasterRow = Backbone.View.extend({
                     ' Terminate All Clusters</a></li>');
         menu.append('<li class="divider"></li>');
         menu.append('<li><a href="#" class="activate-all-workers"><span class="glyphicon glyphicon-heart"></span> Start All Servers</a></li>');
+        menu.append('<li><a href="#" class="status-all-workers"><span class="glyphicon glyphicon-info-sign"></span> Stat All Servers</a></li>');
+
         menu.append('<li><a href="#" class="stop-all-workers"><span class="glyphicon glyphicon-exclamation-sign"></span> Stop All Servers</a></li>');
         menu.append('<li class="divider"></li>');
     },
