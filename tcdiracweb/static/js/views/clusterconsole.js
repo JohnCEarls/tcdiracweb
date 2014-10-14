@@ -93,7 +93,6 @@ var MasterRow = Backbone.View.extend({
         );
     },
 
-
     render : function() {
         if(this.model.get('master_name') == 'None'){
             this.showEmpty();

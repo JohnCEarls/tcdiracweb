@@ -200,6 +200,12 @@ if( isEmptyObject(key_pairs) ){
                                 <%= starcluster_config.key_name %> 
                                 (<%= starcluster_config.key_location %>)
                             </li>
+                            <li class="list-group-item">
+                                <strong>SSH command(from master)</strong></br>
+                                starcluster -c 
+                                https://aurea-nebula.adversary.us/cm/config/<%= worker_id %>
+                                sshmaster -u sgeadmin <%= cluster_name %> 
+                            </li>
                         </ul>
                     </div>
                 </div>
@@ -273,8 +279,6 @@ if( isEmptyObject(key_pairs) ){
     </td>
 </tr>
 </script>
-
-
 
 <script type="text/template" id="template-run">
 <div class="panel-heading">
