@@ -57,7 +57,9 @@ var MasterRow = Backbone.View.extend({
 
     },
     terminateAllClusters : function(){
-        this.sendAllCommand('/cm/terminate/worker/all')
+        if( confirm("Terminate all clusters") ){
+            this.sendAllCommand('/cm/terminate/worker/all');
+        }
     },
 
     activateAllWorkers : function(){
