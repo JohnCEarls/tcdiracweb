@@ -17,6 +17,7 @@ var Worker = Backbone.Model.extend({
             '10': 'Starting',
             '20':'Ready',
             '30': 'Running',
+            '31': 'Cluster Error',
             '35': 'Marked for termination',
             '37': 'Terminating',
             '40':'Terminated'}

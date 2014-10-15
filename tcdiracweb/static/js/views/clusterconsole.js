@@ -266,6 +266,9 @@ var WorkerRow = Backbone.View.extend({
                 events['click .stop'] = 'stop';
 
                 break;
+            case 31: //Cluster error
+                events['click .terminate'] = 'terminate';
+                break;
             case 35: //marked for termination
                 events['click .terminate'] = 'terminate';
                 break;
@@ -310,6 +313,11 @@ var WorkerRow = Backbone.View.extend({
                 dm.append('<li><a href="#" class="status"><span class="glyphicon glyphicon-info-sign"></span> Refresh Server Status</a></li>');
                 dm.append('<li><a href="#" class="stop"><span class="glyphicon glyphicon-exclamation-sign"></span> Stop Server</a></li>');
                 break;
+            case 31: //Cluster error
+                dm.append( '<li><a href="#" class="terminate">'+
+                          '<span class="glyphicon glyphicon-remove"></span>'+
+                          ' Terminate Cluster</a></li>');
+                break;
             case 35: //marked for termination
                 dm.append( '<li><a href="#" class="terminate">' +
                           '<span class="glyphicon glyphicon-remove"></span>' +
@@ -347,6 +355,8 @@ var WorkerRow = Backbone.View.extend({
             case 30: //running
                 this.className = "success";
                 break;
+            case 31: //cluster error
+                this.className = "danger";
             case 35: //marked for termination
                 this.className = "warning"
                 break;
